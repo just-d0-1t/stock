@@ -1,3 +1,4 @@
+import argparse
 import os
 import pandas as pd
 from datetime import datetime, timedelta
@@ -10,7 +11,7 @@ def ensure_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def update_stock_data(stock_code, data_path=None):
+def update_stock_data(stock_code, start_date, data_path=None):
     today = datetime.today().date()
 
     if data_path is None:
@@ -18,7 +19,8 @@ def update_stock_data(stock_code, data_path=None):
 
     if not os.path.exists(data_path):
         # 历史文件不存在 → 默认取一年数据
-        start_date = (today - timedelta(days=365)).strftime("%Y-%m-%d")
+        if start_date is None:
+            start_date = (today - timedelta(days=365)).strftime("%Y-%m-%d")
         analyzer = StockAnalyzer(stock_code, start_date, data_path)
         df = analyzer.run()
     else:
@@ -104,9 +106,9 @@ def plot_kline(df, stock_code, period_days, save_dir=SAVE_DIR):
 
     print(f"✅ 已保存图表: {save_path}")
 
-def update_and_plot(stock_code, data_path=None):
+def update_and_plot(stock_code, date, data_path=None):
     """模块化函数：更新数据并绘制图表"""
-    df = update_stock_data(stock_code, data_path)
+    df = update_stock_data(stock_code, date, data_path)
 
     # 绘制近3月、半年、一年图表
     plot_kline(df, stock_code, 90)
@@ -117,10 +119,20 @@ def update_and_plot(stock_code, data_path=None):
 
 # 支持命令行直接调用
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) < 2:
-        print("用法: python update_and_plot.py <股票代码> [历史数据文件路径]")
-    else:
-        code = sys.argv[1]
-        path = sys.argv[2] if len(sys.argv) > 2 else None
-        update_and_plot(code, path)
+    # 创建参数解析器
+    parser = argparse.ArgumentParser(description='下载股票数据')
+
+    # 添加命令行参数
+    parser.add_argument('-c', '--code', required=True,
+                        help='股票代码，例如: 000001.SZ')
+    parser.add_argument('-d', '--date',
+                        help='日期，格式: YYYY-MM-DD，默认为今天')
+    parser.add_argument('-p', '--path',
+                        help='数据文件保存位置，默认为./stock_data.csv')
+
+    # 解析参数
+    args = parser.parse_args()
+    code = args.code
+    date = args.date
+    path = args.path
+    update_and_plot(code, date, path)

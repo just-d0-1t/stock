@@ -37,24 +37,15 @@ def load_stock(stock_code):
         "data": df_data
     }
 
-def is_first_cross_ma20(df):
-#    """判断前两个交易日是否收盘价首次超过 MA20"""
-#    df_recent = df.tail(2)
-#    crosses = df_recent["close"] > df_recent["ma20"]
-#    # 首次突破：前一天没有突破，当前突破
-#    return crosses.iloc[-1] and not crosses.iloc[-2]
+def has_recent_first_above_ma20(df, days=5):
     """
-    判断最近两个交易日，是否满足：
-    - 前一天 first_above_ma20 == 'y'
-    - 当日收盘价继续在 MA20 之上
+    判断最近 days 个交易日，是否存在 first_above_ma20 == 'y'
     """
-    if df.empty or len(df) < 2:
+    if df.empty or len(df) < 1:
         return False
 
-    df_recent = df.tail(2)
-    prev_row = df_recent.iloc[0]
-
-    return prev_row.get("first_above_ma20", "").lower() == "y"
+    df_recent = df.tail(days)
+    return df_recent["first_above_ma20"].fillna("").str.lower().eq("y").any()
 
 def main():
     # 获取所有 info 文件对应的股票代码
@@ -74,7 +65,7 @@ def main():
 
         # 条件2：前两个交易日收盘价首次超过 MA20
         df_data = stock["data"]
-        if len(df_data) >= 2 and is_first_cross_ma20(df_data):
+        if has_recent_first_above_ma20(df_data, 5):
             target_stocks.append({
                 "stock_code": stock["stock_code"],
                 "short_name": stock["short_name"],
