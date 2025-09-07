@@ -3,6 +3,10 @@ import pandas as pd
 import adata
 from datetime import datetime
 
+
+WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
+
+
 class StockAnalyzer:
     def __init__(self, stock_code: str, start_date: str, data_path: str = None):
         """
@@ -15,7 +19,7 @@ class StockAnalyzer:
         if data_path:
             self.data_path = data_path
         else:
-            self.data_path = f"./data/{self.stock_code}_data.csv"
+            self.data_path = f"{WORK_DIR}/data/{self.stock_code}_data.csv"
 
     def fetch_market_data(self):
         """获取交易数据"""

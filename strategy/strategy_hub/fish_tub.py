@@ -12,6 +12,12 @@ import os
 import pandas as pd
 import numpy as np
 
+from .util.load_info import load_stock_data
+
+
+WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
+TARGET_MARKET_CAP = 500e8  # 500亿，单位为元
+
 
 def is_ma20_slope_increasing(ma20_recent):
     """
@@ -42,23 +48,11 @@ def first_above_ma20(r):
     return r["first_above_ma20"] == "y"
 
 
-def load_data(stock_code, tuning, data_path=None):
-    if data_path is None:
-        data_path = f"./data/{stock_code}_data.csv"
-
-    if not os.path.exists(data_path):
-        return
-
-    records = pd.read_csv(
-        data_path,
-        parse_dates=["trade_date"],
-        dtype={"stock_code": str}  # ⭐ 保证股票代码是字符串
-    )
+def reload_data(records, tuning):
     records.sort_values("trade_date", inplace=True)
 
     # 策略调优
     period = 3 # 数据范围: 几天
-    tuning = tuning.split(",") if tuning else []
     if tuning:
         period = int(tuning[0])
 
@@ -75,6 +69,32 @@ def load_data(stock_code, tuning, data_path=None):
             records.at[idx, "ma20_rising"] = is_ma20_continuous_rising(ma20_recent)
 
     return records
+
+
+"""
+加载股票数据
+根据市值等条件，过滤掉不满足的股票
+对数据进行预处理
+"""
+def load_stock(stock_code, tuning, path):
+    stock = load_stock_data(stock_code, path)
+    if stock is None:
+        return False, "股票信息无法加载"
+
+    tuning = tuning.split(",") if tuning else []
+
+    # 条件1：市值大于 500亿
+    market = TARGET_MARKET_CAP
+    if tuning and len(tuning) > 1:
+        market = tuning[1]
+
+    if stock["market_cap"] < market:
+        return False, f"股票市值小于 {TARGET_MARKET_CAP} 元"
+
+    # 二次处理数据
+    stock["records"] = reload_data(stock["records"], tuning)
+
+    return True, stock
 
 
 # ==========================
@@ -102,7 +122,7 @@ def buy_strategy_2(r, status, debug=False):
 """
 def buy_strategy_3(r, status, debug=False):
     desc = "策略3: 首次超过ma20, 当日涨，斜率为正, 且ma20处于加速上升"
-    if debug: print("[debug] buy_strategy_3", r["trade_time"], r["close"])
+    if debug: print("[debug] buy_strategy_3", r)
     return first_above_ma20(r) and r["ma20_rising"] and r["ma20_slope_up"] and r["is_raise"], desc
 
 

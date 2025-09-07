@@ -3,6 +3,10 @@ import pandas as pd
 import time
 import os
 
+
+WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
+
+
 def save_data(df: pd.DataFrame, data_path):
     """以追加方式写入 CSV，并保持股票代码为字符串"""
     # 确保 stock_code 列为字符串
@@ -11,6 +15,7 @@ def save_data(df: pd.DataFrame, data_path):
     os.makedirs(os.path.dirname(data_path), exist_ok=True)
     # 写入 CSV，覆盖写入
     df.to_csv(data_path, index=False, mode="w", encoding="utf-8-sig")
+
 
 def main():
     # 1. 获取所有大A股票代码
@@ -48,7 +53,7 @@ def main():
             df_combined = pd.concat([stock_info_df.reset_index(drop=True), df_shares.reset_index(drop=True)], axis=1)
 
             # 保存
-            path = f"./data/{code}_info.csv"
+            path = f"{WORK_DIR}/{code}_info.csv"
             save_data(df_combined, path)
 
             # 防止接口请求过快
@@ -56,6 +61,7 @@ def main():
 
         except Exception as e:
             print(f"⚠️ 股票 {code} 处理失败: {e}")
+
 
 if __name__ == "__main__":
     main()
