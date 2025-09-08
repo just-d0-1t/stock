@@ -11,6 +11,7 @@
 import os
 import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
 
 from .util.load_info import load_stock_data
 
@@ -86,7 +87,7 @@ def load_stock(stock_code, tuning, path):
     # 条件1：市值大于 500亿
     market = TARGET_MARKET_CAP
     if tuning and len(tuning) > 1:
-        market = tuning[1]
+        market = int(tuning[1])
 
     if stock["market_cap"] < market:
         return False, f"股票市值小于 {TARGET_MARKET_CAP} 元"

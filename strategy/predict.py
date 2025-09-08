@@ -144,7 +144,7 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
     return status
 
 
-def back_test(records, buy_strategy, sell_strategy, path, debug):
+def back_test(code, records, buy_strategy, sell_strategy, path, debug):
     status = backtesting(records, buy_strategy, sell_strategy, debug)
 
     for op in status["operations"]:
@@ -247,7 +247,7 @@ def excute(stock_code, operate, mode, mode_tuning, buy_strategy, sell_strategy, 
 
     # 回测
     if operate == "back_test":
-        back_test(records, buy_strategy, sell_strategy, path, debug)
+        back_test(stock_code, records, buy_strategy, sell_strategy, path, debug)
 
     if operate == "predict_buy":
         ok, desc, trade_time = predict_buy(records, buy_strategy, sell_strategy, debug)
