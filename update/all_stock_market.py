@@ -54,7 +54,7 @@ def update(fetch):
             print(f"\n[{idx}/{len(stock_codes)}] 正在处理股票: {code}")
             update_and_plot(code, None)  # 使用默认历史文件路径
             # 为防止接口请求过快，可加延时
-            time.sleep(1)  # 1秒延时
+            time.sleep(0.3)  # 1秒延时
         except Exception as e:
             print(f"⚠️ 股票 {code} 处理失败: {e}")
 

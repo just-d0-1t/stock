@@ -37,7 +37,7 @@ def is_ma20_continuous_rising(ma20_recent):
     """
     # 检查连续递增
     for i in range(1, len(ma20_recent)):
-        if ma20_recent[i] <= ma20_recent[i-1]:
+        if ma20_recent[i] < ma20_recent[i-1]:
             return False
     return True
 
@@ -127,10 +127,36 @@ def buy_strategy_3(r, status, debug=False):
     return first_above_ma20(r) and r["ma20_rising"] and r["ma20_slope_up"] and r["is_raise"], desc
 
 
+"""
+即将突破ma20的股票, 策略3激进版
+"""
+def buy_strategy_4(r, status, debug=False):
+    desc = "策略4: 即将突破ma20的股票"
+    if debug: print("[debug] buy_strategy_4", r)
+
+    close_to_ma20 = r["ma20"] > r["close"] and ((r["ma20"] - r["close"]) / r["close"]) < 0.02
+
+    return close_to_ma20 and r["ma20_slope_up"] and r["is_raise"], desc
+
+
+"""
+即将突破ma20的股票, 策略3激进版
+"""
+def buy_strategy_5(r, status, debug=False):
+    desc = "策略5: 即将突破ma20的股票"
+    if debug: print("[debug] buy_strategy_5", r)
+
+    close_to_ma20 = r["ma20"] > r["close"] and ((r["ma20"] - r["close"]) / r["close"]) < 0.02
+
+    return close_to_ma20 and r["ma20_rising"] and r["ma20_slope_up"] and r["is_raise"], desc
+
+
 BUY_STRATEGIES = {
     "1": buy_strategy_1,
     "2": buy_strategy_2,
     "3": buy_strategy_3,
+    "4": buy_strategy_4,
+    "5": buy_strategy_5,
 }
 
 

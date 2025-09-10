@@ -44,6 +44,48 @@ class StockAnalyzer:
             )
         return pd.DataFrame()
 
+    def ma(self, all_df, period):
+        # 偷个懒
+        period = str(period)
+        win = int(period)
+
+        # ===== 计算 ma =====
+        all_df["ma" + period] = all_df["close"].rolling(window=win, min_periods=win).mean().fillna(0)
+
+        # ===== 收盘价是否超过 ma =====
+        all_df["above_ma" + period] = all_df.apply(
+            lambda row: "y" if row["ma" + period] > 0 and row["close"] > row["ma" + period] else "n",
+            axis=1
+        )
+
+        # ===== 是否首次突破 ma =====
+        first_flags = []
+        for i in range(len(all_df)):
+            if all_df.loc[i, "above_ma" + period] == "y":
+                if i == 0:
+                    first_flags.append("n")
+                elif all_df.loc[i-1, "above_ma" + period] == "n":
+                    first_flags.append("y")
+                else:
+                    first_flags.append("n")
+            else:
+                first_flags.append("n")
+        all_df["first_above_ma" + period] = first_flags
+
+        # ===== 是否首次跌破 ma =====
+        first_under_flags = []
+        for i in range(len(all_df)):
+            if all_df.loc[i, "above_ma" + period] == "n":
+                if i == 0:
+                    first_under_flags.append("n")
+                elif all_df.loc[i-1, "above_ma" + period] == "y":
+                    first_under_flags.append("y")
+                else:
+                    first_under_flags.append("n")
+            else:
+                first_under_flags.append("n")
+        all_df["first_under_ma" + period] = first_under_flags
+
     def compute_indicators(self, df: pd.DataFrame, history_df: pd.DataFrame):
         """计算指标：ma20, above_ma20, first_above_ma20, volume_ratio"""
     
@@ -60,26 +102,14 @@ class StockAnalyzer:
             subset=["trade_date"], keep="last"
         ).sort_values("trade_date").reset_index(drop=True)
     
+        # ===== 计算 ma5 =====
+        self.ma(all_df, 5)
+
+        # ===== 计算 ma10 =====
+        self.ma(all_df, 10)
+
         # ===== 计算 ma20 =====
-        all_df["ma20"] = all_df["close"].rolling(window=20, min_periods=20).mean().fillna(0)
-    
-        # ===== 收盘价是否超过 ma20 =====
-        all_df["above_ma20"] = all_df.apply(
-            lambda row: "y" if row["ma20"] > 0 and row["close"] > row["ma20"] else "n",
-            axis=1
-        )
-    
-        # ===== 是否首次突破 ma20 =====
-        first_flags = []
-        for i in range(len(all_df)):
-            if all_df.loc[i, "above_ma20"] == "y":
-                if i == 0 or all_df.loc[i-1, "above_ma20"] == "n":
-                    first_flags.append("y")
-                else:
-                    first_flags.append("n")
-            else:
-                first_flags.append("n")
-        all_df["first_above_ma20"] = first_flags
+        self.ma(all_df, 20)
     
         # ===== 计算量比（过去5日平均） =====
         vr_list = []

@@ -12,10 +12,17 @@ import argparse
 import os
 import pandas as pd
 import numpy as np
-import strategy_hub.fish_tub as fish_tub
+
 from glob import glob
 from datetime import datetime, timedelta
 
+# 注册策略
+import strategy_hub.fish_tub as fish_tub
+import strategy_hub.hydroplaning as hydroplaning
+mapping = {
+    "fish_tub": fish_tub,
+    "hydroplaning": hydroplaning,
+}
 
 strategy = None
 
@@ -25,9 +32,6 @@ DATA_DIR = f"{WORK_DIR}/data"  # 本地数据路径
 
 def get_strategy(mode: str):
     """根据命令行参数选择策略模块"""
-    mapping = {
-        "fish_tub": fish_tub,
-    }
     if mode not in mapping:
         raise ValueError(f"未知环境: {env}，仅支持 {list(mapping.keys())}")
     return mapping[mode]
@@ -171,8 +175,16 @@ def back_test(code, records, buy_strategy, sell_strategy, path, debug):
     print()
 
 
-def predict_buy(records, buy_strategy, sell_strategy, debug):
+def predict_buy(records, buy_strategy, sell_strategy, target_date, debug):
     r = records.iloc[-1]
+
+    if target_date:
+        target_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+        rs = records[records["trade_date"].dt.date == target_date]
+        if len(rs) == 0:
+            return False, "无匹配的日期", target_date
+        r = rs.iloc[0]
+
     status = {
         "buy_strategy": buy_strategy,
     }
@@ -227,7 +239,7 @@ def predict_sell(records, buy_strategy, sell_strategy, debug):
     return False, "", ""
         
 
-def excute(stock_code, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, debug):
+def excute(stock_code, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, target_date, debug):
     global strategy
     strategy = get_strategy(mode) 
 
@@ -250,7 +262,7 @@ def excute(stock_code, operate, mode, mode_tuning, buy_strategy, sell_strategy, 
         back_test(stock_code, records, buy_strategy, sell_strategy, path, debug)
 
     if operate == "predict_buy":
-        ok, desc, trade_time = predict_buy(records, buy_strategy, sell_strategy, debug)
+        ok, desc, trade_time = predict_buy(records, buy_strategy, sell_strategy, target_date, debug)
         if ok:
             print(f"推荐买入股票 %s, 代码 %s, 日期 %s" % (stock["stock_name"], stock["stock_code"], trade_time))
             print(desc)
@@ -264,7 +276,7 @@ def excute(stock_code, operate, mode, mode_tuning, buy_strategy, sell_strategy, 
             print()
 
 
-def predict(stock_code, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, debug):
+def predict(stock_code, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, target_date, debug):
     stock_codes = []
     if stock_code == "all":
         info_files = glob(os.path.join(DATA_DIR, "*_info.csv"))
@@ -273,7 +285,7 @@ def predict(stock_code, operate, mode, mode_tuning, buy_strategy, sell_strategy,
         stock_codes = stock_code.split(",")
 
     for code in stock_codes:
-        excute(code, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, debug)
+        excute(code, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, target_date, debug)
 
 
 # ==========================
@@ -289,6 +301,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--buy', help='买入策略，例如: 1,2')
     parser.add_argument('-s', '--sell', help='卖出策略，例如: 1,6,7')
     parser.add_argument('-p', '--path', help='数据文件保存位置')
+    parser.add_argument('-q', '--date', help='指定查询日期')
     parser.add_argument('-d', '--debug', help='调试模式')
 
     args = parser.parse_args()
@@ -299,7 +312,8 @@ if __name__ == "__main__":
     buy_strategy = args.buy
     sell_strategy = args.sell
     path = args.path
+    target_date = args.date
     debug = args.debug
 
-    predict(code, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, debug)
+    predict(code, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, target_date, debug)
 
