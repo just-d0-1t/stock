@@ -119,33 +119,34 @@ def load_stock(stock_code, tuning, path, ktype=1):
 # 买入策略
 # ==========================
 """
-策略1比策略3更加激进，ma20斜率未转正时就买入，
-具体还要看大盘的走势，底部冲高，或者牛市时，可以大胆买入。
+策略1: 首次超过ma20，当日涨
 """
 def buy_strategy_1(r, status, debug=False):
-    desc = "策略1: 首次超过ma20, 当日涨，且ma20处于加速上升"
+    desc = "策略1: 基础策略，首次超过ma20，当日涨"
     if debug: print("[debug] buy_strategy_1", r)
-    return first_above_ma20(r) and r["ma20_slope_up"] and r["is_raise"], desc
-
-
-def buy_strategy_2(r, status, debug=False):
-    desc = "策略2: 首次超过ma20，当日涨"
-    if debug: print("[debug] buy_strategy_2", r)
     return first_above_ma20(r) and r["is_raise"], desc
 
 
 """
-非常稳健的买入策略，
-熊市时主要策略
+策略2: 当日涨，且ma20处于加速上升
+"""
+def buy_strategy_2(r, status, debug=False):
+    desc = "策略2: 当日涨，且ma20处于加速上升"
+    if debug: print("[debug] buy_strategy_2", r)
+    return r["ma20_slope_up"] and r["is_raise"], desc
+
+
+"""
+策略3：当日涨，斜率为正, 且ma20处于加速上升
 """
 def buy_strategy_3(r, status, debug=False):
-    desc = "策略3: 首次超过ma20, 当日涨，斜率为正, 且ma20处于加速上升"
+    desc = "策略3: 当日涨，斜率为正, 且ma20处于加速上升"
     if debug: print("[debug] buy_strategy_3", r)
-    return first_above_ma20(r) and r["ma20_rising"] and r["ma20_slope_up"] and r["is_raise"], desc
+    return r["ma20_rising"] and r["ma20_slope_up"] and r["is_raise"], desc
 
 
 """
-即将突破ma20的股票, 策略3激进版
+即将突破ma20的股票
 """
 def buy_strategy_4(r, status, debug=False):
     desc = "策略4: 即将突破ma20的股票"
@@ -153,71 +154,16 @@ def buy_strategy_4(r, status, debug=False):
 
     close_to_ma20 = r["ma20"] > r["close"] and ((r["ma20"] - r["close"]) / r["close"]) < 0.02
 
-    return close_to_ma20 and r["ma20_slope_up"] and r["is_raise"], desc
+    return close_to_ma20, desc
 
 
 """
-即将突破ma20的股票, 策略3激进版
+KDJ出现金叉，MACD转强
 """
 def buy_strategy_5(r, status, debug=False):
-    desc = "策略5: 即将突破ma20的股票"
+    desc = "策略5：KDJ出现金叉，MACD转强"
     if debug: print("[debug] buy_strategy_5", r)
-
-    close_to_ma20 = r["ma20"] > r["close"] and ((r["ma20"] - r["close"]) / r["close"]) < 0.02
-
-    return close_to_ma20 and r["ma20_rising"] and r["ma20_slope_up"] and r["is_raise"], desc
-
-
-"""
-KDJ出现金叉，MACD转强，结合策略4
-"""
-def buy_strategy_6(r, status, debug=False):
-    # 近两日KDJ出现金叉
-    # MACD转强
-    # buy_strategy_4
-    desc =  "策略6：KDJ出现金叉，MACD转强，结合策略4"
-    if debug: print("[debug] buy_strategy_6", r)
-    
-    ok, tmp = buy_strategy_4(r, status, debug=False)
-    return ok and r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
-
-
-"""
-KDJ出现金叉，MACD转强，结合策略4
-"""
-def buy_strategy_7(r, status, debug=False):
-    # 近两日KDJ出现金叉
-    # MACD转强
-    # buy_strategy_5
-    desc =  "策略7：KDJ出现金叉，MACD转强，结合策略5"
-    if debug: print("[debug] buy_strategy_7", r)
-    ok, tmp = buy_strategy_5(r, status, debug=False)
-    return ok and r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
-
-
-"""
-KDJ出现金叉，MACD转强，结合策略4
-"""
-def buy_strategy_8(r, status, debug=False):
-    # 近两日KDJ出现金叉
-    # MACD转强
-    # buy_strategy_5
-    desc =  "策略7：KDJ出现金叉，MACD转强，结合策略5"
-    if debug: print("[debug] buy_strategy_7", r)
-    return r["is_raise"] and r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
-
-
-"""
-KDJ出现金叉，MACD转强，结合策略4
-"""
-def buy_strategy_9(r, status, debug=False):
-    # 近两日KDJ出现金叉
-    # MACD转强
-    # buy_strategy_5
-    desc =  "策略7：KDJ出现金叉，MACD转强，结合策略3"
-    if debug: print("[debug] buy_strategy_3", r)
-    ok, tmp = buy_strategy_3(r, status, debug=False)
-    return ok and r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
+    return r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
 
 
 BUY_STRATEGIES = {
@@ -226,10 +172,6 @@ BUY_STRATEGIES = {
     "3": buy_strategy_3,
     "4": buy_strategy_4,
     "5": buy_strategy_5,
-    "6": buy_strategy_6,
-    "7": buy_strategy_7,
-    "8": buy_strategy_8,
-    "9": buy_strategy_9,
 }
 
 

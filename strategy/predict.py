@@ -40,22 +40,48 @@ def get_strategy(mode: str):
 # ==========================
 # 执行策略函数
 # ==========================
-def buy(r, status, debug=False):
-    for sid in status["buy_strategy"]:
-        if sid in strategy.BUY_STRATEGIES:
-            hit, desc = strategy.BUY_STRATEGIES[sid](r, status, debug)
+def eval_strategy(expr, r, status, strategies, debug=False):
+    """
+    递归解析表达式，支持:
+    - "," 表示 OR
+    - "+" 表示 AND
+    """
+    expr = expr.strip()
+
+    # 优先级: AND (+) > OR (,)
+    if "," in expr:  # 先处理 OR
+        parts = expr.split(",")
+        for part in parts:
+            hit, desc = eval_strategy(part, r, status, strategies, debug)
             if hit:
-                return True, desc
-    return False, ""
+                return hit, desc
+        return False, ""
+
+    if "+" in expr:  # 处理 AND
+        parts = expr.split("+")
+        results = []
+        descs = []
+        for part in parts:
+            hit, desc = eval_strategy(part, r, status, strategies, debug)
+            results.append(hit)
+            descs.append(desc)
+        return all(results), " AND ".join([d for h, d in zip(results, descs) if h])
+
+    # 基础情况: 单个策略编号
+    sid = expr
+    if sid in strategies:
+        return strategies[sid](r, status, debug)
+    else:
+        if debug:
+            print(f"未知策略: {sid}")
+        return False, ""
+
+def buy(r, status, debug=False):
+    return eval_strategy(status["buy_strategy"], r, status, strategy.BUY_STRATEGIES, debug)
 
 
 def sell(r, status, debug=False):
-    for sid in status["sell_strategy"]:
-        if sid in strategy.SELL_STRATEGIES:
-            hit, desc = strategy.SELL_STRATEGIES[sid](r, status, debug)
-            if hit:
-                return True, desc
-    return False, ""
+    return eval_strategy(status["sell_strategy"], r, status, strategy.SELL_STRATEGIES, debug)
 
 
 def backtesting(records, buy_strategy, sell_strategy, debug):
@@ -254,8 +280,8 @@ def excute(stock_code, ktype, operate, mode, mode_tuning, buy_strategy, sell_str
         return False
 
     records = stock["records"]
-    buy_strategy = buy_strategy.split(",") if buy_strategy else []
-    sell_strategy = sell_strategy.split(",") if sell_strategy else []
+    buy_strategy = buy_strategy
+    sell_strategy = sell_strategy
 
     # 回测
     if operate == "back_test":
