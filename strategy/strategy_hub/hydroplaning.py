@@ -72,8 +72,8 @@ def reload_data(records, tuning):
 根据市值等条件，过滤掉不满足的股票
 对数据进行预处理
 """
-def load_stock(stock_code, tuning, path):
-    stock = load_stock_data(stock_code, path)
+def load_stock(stock_code, tuning, path, ktype=1):
+    stock = load_stock_data(stock_code, path, ktype)
     if stock is None:
         return False, "股票信息无法加载"
 

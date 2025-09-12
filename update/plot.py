@@ -23,7 +23,7 @@ def ensure_dir(path):
         os.makedirs(path)
 
 
-def plot_kline(df, stock_code, period_days, end_date = None, save_dir=SAVE_DIR):
+def plot_kline(df, stock_code, ktype, period_days, end_date = None, save_dir=SAVE_DIR):
     """
     绘制股票K线图 + MA20 + 量比（A股风格：涨红跌绿）
     df: DataFrame，必须包含 open, high, low, close, volume, trade_date, volume_ratio
@@ -68,13 +68,13 @@ def plot_kline(df, stock_code, period_days, end_date = None, save_dir=SAVE_DIR):
     ]
 
     # 输出路径
-    save_path = os.path.join(save_dir, f"{stock_code}_kline_{period_days}d.png")
+    save_path = os.path.join(save_dir, f"{stock_code}_{ktype}_kline_{period_days}d.png")
 
     # 绘制并保存（高分辨率）
     mpf.plot(
         ohlc,
         type='candle',
-        mav=(20,),
+        mav=(5,10,20),
         volume=True,
         style=style,
         title=f"{stock_code} 近{period_days}日 K线 + MA20 + 量比",
@@ -123,6 +123,8 @@ if __name__ == "__main__":
     # 添加命令行参数
     parser.add_argument('-c', '--code', required=True,
                         help='股票代码，例如: 000001.SZ')
+    parser.add_argument('-k', '--ktype', required=True, type=int,
+                        help='k线类型')
     parser.add_argument('-e', '--end',
                         help='终点日期，格式: YYYY-MM-DD，默认为今天')
     parser.add_argument('-d', '--days', required=True,
@@ -135,4 +137,4 @@ if __name__ == "__main__":
 
     # 解析参数
     args = parser.parse_args()
-    plot(args.code, args.days, args.end, args.path, args.save)
+    plot(args.code, arsg.ktype, args.days, args.end, args.path, args.save)

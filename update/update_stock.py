@@ -14,8 +14,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 import mplfinance as mpf
 from stock_analyzer import StockAnalyzer  # 你之前实现的类
+#from update_kdj import StockAnalyzer  # 你之前实现的类
 from plot import plot_kline
-import warnings
 
 
 WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
@@ -58,21 +58,9 @@ def update_stock_data(stock_code, start_date, data_path=None, ktype=1):
     return df
 
 
-def update_and_plot(stock_code, date, data_path=None, ktype=1):
+def update(stock_code, date, data_path=None, ktype=1):
     """模块化函数：更新数据并绘制图表"""
     df = update_stock_data(stock_code, date, data_path, ktype)
-    # 屏蔽 warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        plot_kline(df, stock_code, ktype, 90)
-        plot_kline(df, stock_code, ktype, 365)
-        plot_kline(df, stock_code, ktype, 730)
-
-    # 绘制近3月、半年、一年图表
-    # plot_kline(df, stock_code, 90)
-    # plot_kline(df, stock_code, 180)
-    # plot_kline(df, stock_code, 365)
-
     return df
 
 
@@ -91,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument('-k', '--ktype',
                         type=int,
                         default=1,
-                        help='k线类型 1.日 2.周 3.月')
+                        help='k线类型')
 
     # 解析参数
     args = parser.parse_args()
@@ -99,4 +87,4 @@ if __name__ == "__main__":
     date = args.date
     path = args.path
     ktype = args.ktype
-    update_and_plot(code, date, path, ktype)
+    update(code, date, path, ktype)

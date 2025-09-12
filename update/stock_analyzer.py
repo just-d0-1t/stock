@@ -6,26 +6,101 @@ from datetime import datetime
 
 WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
 
+import numpy as np
+
+def compute_kdj(df, n=9, k_smooth=3, d_smooth=3):
+    """
+    计算KDJ指标，并标注金叉和死叉
+    df: DataFrame，必须包含 high, low, close
+    n: RSV周期，常用9
+    k_smooth: K平滑周期，常用3
+    d_smooth: D平滑周期，常用3
+    """
+    # 1. 计算RSV
+    low_min = df['low'].rolling(n, min_periods=1).min()
+    high_max = df['high'].rolling(n, min_periods=1).max()
+    df['rsv'] = (df['close'] - low_min) / (high_max - low_min) * 100
+
+    # 2. 计算K、D
+    df['K'] = df['rsv'].ewm(alpha=1/k_smooth, adjust=False).mean()
+    df['D'] = df['K'].ewm(alpha=1/d_smooth, adjust=False).mean()
+
+    # 3. 计算J
+    df['J'] = 3 * df['K'] - 2 * df['D']
+
+    # 4. 标注金叉/死叉
+    df['kdj_signal'] = ''
+    for i in range(1, len(df)):
+        if df['K'].iloc[i-1] < df['D'].iloc[i-1] and df['K'].iloc[i] > df['D'].iloc[i]:
+            df.at[i, 'kdj_signal'] = 'golden_cross'  # 金叉
+        elif df['K'].iloc[i-1] > df['D'].iloc[i-1] and df['K'].iloc[i] < df['D'].iloc[i]:
+            df.at[i, 'kdj_signal'] = 'death_cross'   # 死叉
+        else:
+            df.at[i, 'kdj_signal'] = 'no_cross'   # 死叉
+            
+
+    df.drop(['rsv'], axis=1, inplace=True)
+
+    return df
+
+
+def compute_macd(df, short=12, long=26, signal=9):
+    """
+    计算MACD指标，并标注金叉和死叉
+    df: DataFrame，必须包含 close 列
+    short: 短期EMA周期，常用12
+    long: 长期EMA周期，常用26
+    signal: DEA平滑周期，常用9
+    """
+    # 1. 计算EMA
+    df['ema_short'] = df['close'].ewm(span=short, adjust=False).mean()
+    df['ema_long'] = df['close'].ewm(span=long, adjust=False).mean()
+
+    # 2. DIF
+    df['DIF'] = df['ema_short'] - df['ema_long']
+
+    # 3. DEA（信号线）
+    df['DEA'] = df['DIF'].ewm(span=signal, adjust=False).mean()
+
+    # 4. MACD（柱状图）
+    df['MACD'] = 2 * (df['DIF'] - df['DEA'])
+
+    # 5. 标注金叉/死叉
+    df['macd_signal'] = ''
+    for i in range(1, len(df)):
+        if df['DIF'].iloc[i-1] < df['DEA'].iloc[i-1] and df['DIF'].iloc[i] > df['DEA'].iloc[i]:
+            df.at[i, 'macd_signal'] = 'golden_cross'  # 金叉
+        elif df['DIF'].iloc[i-1] > df['DEA'].iloc[i-1] and df['DIF'].iloc[i] < df['DEA'].iloc[i]:
+            df.at[i, 'macd_signal'] = 'death_cross'   # 死叉
+        else:
+            df.at[i, 'mach_signal'] = 'no_cross'   # 死叉
+
+    df.drop(['ema_long', 'ema_short'], axis=1, inplace=True)
+
+    return df
+
 
 class StockAnalyzer:
-    def __init__(self, stock_code: str, start_date: str, data_path: str = None):
+    def __init__(self, stock_code: str, start_date: str, data_path: str = None, ktype: int=1):
         """
         :param stock_code: 股票代码，例如 '002747'
         :param start_date: 起始日期，例如 '2025-08-01'
         :param data_path: 股票数据存放路径（CSV 文件），若未指定则默认生成
+        :param ktype: 1.日；2.周；3.月
         """
         self.stock_code = stock_code
         self.start_date = start_date
+        self.ktype = ktype
         if data_path:
             self.data_path = data_path
         else:
-            self.data_path = f"{WORK_DIR}/data/{self.stock_code}_data.csv"
+            self.data_path = f"{WORK_DIR}/data/{self.stock_code}_{self.ktype}_data.csv"
 
-    def fetch_market_data(self):
+    def fetch_market_data(self, ktype=1):
         """获取交易数据"""
         res_df = adata.stock.market.get_market(
             stock_code=self.stock_code,
-            k_type=1,
+            k_type=self.ktype,
             start_date=self.start_date
         )
         return res_df
@@ -111,6 +186,12 @@ class StockAnalyzer:
         # ===== 计算 ma20 =====
         self.ma(all_df, 20)
     
+        # ===== 计算 kdj =====
+        compute_kdj(all_df)
+    
+        # ===== 计算 macd =====
+        compute_macd(all_df)
+    
         # ===== 计算量比（过去5日平均） =====
         vr_list = []
         for i in range(len(all_df)):
@@ -136,6 +217,8 @@ class StockAnalyzer:
         """执行完整流程"""
         print(f"获取股票 {self.stock_code} 自 {self.start_date} 起的数据...")
         new_data = self.fetch_market_data()
+        if new_data.empty:
+             print("new_data 是空的 DataFrame")
         history_data = self.load_history()
 
         all_data = self.compute_indicators(new_data, history_data)

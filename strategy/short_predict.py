@@ -5,7 +5,7 @@
 @file: backtest.py
 @author: vanilla
 @date: 2025-09-05
-@desc: 股票回测策略脚本，支持多买卖策略组合和调试模式。
+@desc: 股票回测策略脚本，短线操作。
 """
 
 import argparse
@@ -65,7 +65,6 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
     status = {
         "sell_strategy": sell_strategy,
         "buy_strategy": buy_strategy,
-        "should_buy": False,
         "hold": False,
         "buy": 0,
         "base": fund,
@@ -83,36 +82,32 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
         if idx < 21:
             continue
 
-        if status["should_buy"]:
-            # 可买入手数，100的整数倍
-            status["hand"] = int(status["fund"] / r["open"] / 100) * 100
-            # 持仓，扣除手续费
-            capital = r["open"] * status["hand"]
-            status["fund"] = status["fund"] - capital
-            status["buy"] = r["open"]
-            if capital * 0.00026 < 5:
-                status["fund"] = status["fund"] - 5
-            else:
-                status["fund"] = status["fund"] - capital * 0.00026
-            operation["trade_time"] = r["trade_time"] 
-            operation["hand"] = status["hand"]
-            operation["price"] = r["open"]
-            operation["capital"] = capital
-            operation["cash_flow"] = status["fund"]
-            operation["rate"] = 0
-            status["operations"].append(operation)
-            operation = {}
-            status["should_buy"] = False
-            status["hold"] = True
-
         if not status["hold"]:
             ok, desc = buy(r, status, debug)
             if ok:
-                status["should_buy"] = True
                 status["record"].append(r)
                 operation["trggier"] = r["trade_time"]
                 operation["operator"] = "买入"
                 operation["strategy"] = desc
+                # 可买入手数，100的整数倍
+                status["hand"] = int(status["fund"] / r["close"] / 100) * 100
+                # 持仓，扣除手续费
+                capital = r["close"] * status["hand"]
+                status["fund"] = status["fund"] - capital
+                status["buy"] = r["close"]
+                if capital * 0.00026 < 5:
+                    status["fund"] = status["fund"] - 5
+                else:
+                    status["fund"] = status["fund"] - capital * 0.00026
+                operation["trade_time"] = r["trade_time"] 
+                operation["hand"] = status["hand"]
+                operation["price"] = r["close"]
+                operation["capital"] = capital
+                operation["cash_flow"] = status["fund"]
+                operation["rate"] = 0
+                status["operations"].append(operation)
+                operation = {}
+                status["hold"] = True
 
         else:
             status["days"] = status["days"] + 1
@@ -121,13 +116,13 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
             if ok:
                 status["hold"] = False
                 status["days"] = 0
-                capital = status["hand"] * r["close"]
+                capital = status["hand"] * r["open"]
                 status["fund"] = status["fund"] + capital
                 if capital * 0.00026 < 5:
                     status["fund"] = status["fund"] - 5
                 else:
                     status["fund"] = status["fund"] - capital * 0.00026
-                rate = (r["close"] - status["buy"]) * 100.0 / status["buy"]
+                rate = (r["open"] - status["buy"]) * 100.0 / status["buy"]
                 if rate >= 0:
                     status["win"] = status["win"] + 1
                 else:
@@ -135,7 +130,7 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
                 operation["operator"] = "卖出"
                 operation["trade_time"] = r["trade_time"] 
                 operation["hand"] = status["hand"]
-                operation["price"] = r["close"]
+                operation["price"] = r["open"]
                 operation["capital"] = 0
                 operation["cash_flow"] = status["fund"]
                 operation["strategy"] = desc
@@ -167,9 +162,13 @@ def back_test(code, records, buy_strategy, sell_strategy, path, debug):
             print()
             print()
 
+    capital = 0
+    if len(status["operations"]) > 0:
+        capital = status["operations"][-1]["capital"]
+
     print("============================")
     print("股票代码: %s\n量化策略: %s\n买入策略: %s\n卖出策略: %s\n数据路径: %s" % (code, mode, buy_strategy, sell_strategy, path))
-    print("涨跌: ", (status["fund"] - status["base"]) * 100.0 / status["base"], "%")
+    print("涨跌: ", (status["fund"] + capital - status["base"]) * 100.0 / status["base"], "%")
     print("胜率: 总计 %d 轮操作, 取胜 %d 轮" % (status["win"] + status["lose"], status["win"]))
     print("============================")
     print()
@@ -309,7 +308,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='股票策略回测')
 
     parser.add_argument('-c', '--code', required=True, help='股票代码，例如: 000001.SZ')
-    parser.add_argument('-k', '--ktype', type=int, default=1, help='k线类型，例如: 1,2,3')
+    parser.add_argument('-k', '--ktype', type=int, default=1, help='k线类型>，例如: 1,2,3')
     parser.add_argument('-m', '--mode', help='量化策略，例如: fish_tub')
     parser.add_argument('-o', '--operate', help='预测买入|预测卖出|回测')
     parser.add_argument('-t', '--tuning', help='量化策略调优')

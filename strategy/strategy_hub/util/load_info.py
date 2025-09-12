@@ -5,10 +5,10 @@ WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
 DATA_DIR = f"{WORK_DIR}/data"  # 本地数据路径
 
 
-def load_stock_data(stock_code, path):
+def load_stock_data(stock_code, path, ktype=1):
     """读取单只股票的 info 和 data 文件，计算市值"""
     info_file = os.path.join(DATA_DIR, f"{stock_code}_info.csv")
-    data_file = os.path.join(DATA_DIR, f"{stock_code}_data.csv")
+    data_file = os.path.join(DATA_DIR, f"{stock_code}_{ktype}_data.csv")
     if path:
         data_file = path
 
@@ -16,7 +16,15 @@ def load_stock_data(stock_code, path):
         return None
 
     # 读取 info
-    df_info = pd.read_csv(info_file, parse_dates=["list_date", "change_date"], dtype={"stock_code": str})
+#    df_info = pd.read_csv(info_file, parse_dates=["list_date", "change_date"], dtype={"stock_code": str})
+    df_info = pd.read_csv(
+        info_file,
+        parse_dates=["list_date", "change_date"],
+        dtype={
+            "stock_code": str,
+            "recent_kdj_gold": str
+        }
+    )
     # 获取最新股本记录
     latest_info = df_info.sort_values("change_date").iloc[-1]
 

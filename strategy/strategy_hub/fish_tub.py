@@ -42,6 +42,18 @@ def is_ma20_continuous_rising(ma20_recent):
     return True
 
 
+def is_macd_continuous_rising(macd_recent):
+    """
+    判断 MACD 最近是否转强
+    返回: bool
+    """
+    # 检查连续递增
+    for i in range(1, len(macd_recent)):
+        if macd_recent[i] < macd_recent[i-1]:
+            return False
+    return True
+
+
 def first_above_ma20(r):
     """
     判断股价是否超过了ma20
@@ -62,12 +74,17 @@ def reload_data(records, tuning):
         row = records.iloc[idx]
         if idx >= 1:
             records.at[idx, "is_raise"] = row["close"] > row["open"]
+            if records.iloc[idx]["kdj_signal"] == "golden_cross" or  records.iloc[idx-1]["kdj_signal"] == "golden_cross":
+                records.at[idx, "recent_kdj_gold"] = "golden_cross"
 
         if idx >= period - 1:
             ma20_recent = records["ma20"].iloc[idx - period + 1: idx + 1].values
             if not np.isnan(ma20_recent).any():
                 records.at[idx, "ma20_slope_up"] = is_ma20_slope_increasing(ma20_recent)
-            records.at[idx, "ma20_rising"] = is_ma20_continuous_rising(ma20_recent)
+                records.at[idx, "ma20_rising"] = is_ma20_continuous_rising(ma20_recent)
+            macd_recent = records["MACD"].iloc[idx - period + 1: idx + 1].values
+            if not np.isnan(macd_recent).any():
+                records.at[idx, "macd_rising"] = is_macd_continuous_rising(macd_recent)
 
     return records
 
@@ -77,8 +94,8 @@ def reload_data(records, tuning):
 根据市值等条件，过滤掉不满足的股票
 对数据进行预处理
 """
-def load_stock(stock_code, tuning, path):
-    stock = load_stock_data(stock_code, path)
+def load_stock(stock_code, tuning, path, ktype=1):
+    stock = load_stock_data(stock_code, path, ktype)
     if stock is None:
         return False, "股票信息无法加载"
 
@@ -151,12 +168,68 @@ def buy_strategy_5(r, status, debug=False):
     return close_to_ma20 and r["ma20_rising"] and r["ma20_slope_up"] and r["is_raise"], desc
 
 
+"""
+KDJ出现金叉，MACD转强，结合策略4
+"""
+def buy_strategy_6(r, status, debug=False):
+    # 近两日KDJ出现金叉
+    # MACD转强
+    # buy_strategy_4
+    desc =  "策略6：KDJ出现金叉，MACD转强，结合策略4"
+    if debug: print("[debug] buy_strategy_6", r)
+    
+    ok, tmp = buy_strategy_4(r, status, debug=False)
+    return ok and r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
+
+
+"""
+KDJ出现金叉，MACD转强，结合策略4
+"""
+def buy_strategy_7(r, status, debug=False):
+    # 近两日KDJ出现金叉
+    # MACD转强
+    # buy_strategy_5
+    desc =  "策略7：KDJ出现金叉，MACD转强，结合策略5"
+    if debug: print("[debug] buy_strategy_7", r)
+    ok, tmp = buy_strategy_5(r, status, debug=False)
+    return ok and r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
+
+
+"""
+KDJ出现金叉，MACD转强，结合策略4
+"""
+def buy_strategy_8(r, status, debug=False):
+    # 近两日KDJ出现金叉
+    # MACD转强
+    # buy_strategy_5
+    desc =  "策略7：KDJ出现金叉，MACD转强，结合策略5"
+    if debug: print("[debug] buy_strategy_7", r)
+    return r["is_raise"] and r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
+
+
+"""
+KDJ出现金叉，MACD转强，结合策略4
+"""
+def buy_strategy_9(r, status, debug=False):
+    # 近两日KDJ出现金叉
+    # MACD转强
+    # buy_strategy_5
+    desc =  "策略7：KDJ出现金叉，MACD转强，结合策略3"
+    if debug: print("[debug] buy_strategy_3", r)
+    ok, tmp = buy_strategy_3(r, status, debug=False)
+    return ok and r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
+
+
 BUY_STRATEGIES = {
     "1": buy_strategy_1,
     "2": buy_strategy_2,
     "3": buy_strategy_3,
     "4": buy_strategy_4,
     "5": buy_strategy_5,
+    "6": buy_strategy_6,
+    "7": buy_strategy_7,
+    "8": buy_strategy_8,
+    "9": buy_strategy_9,
 }
 
 
@@ -255,6 +328,11 @@ def sell_strategy_b(r, status, debug=False):
                 return True, desc
     return False, desc
 
+def sell_strategy_c(r, status, debug=False):
+    desc = "策略c：短线策略，第二天直接卖出"
+    if debug: print(r, status)
+    ok = len(status["record"]) == 2
+    return ok, desc
 
 SELL_STRATEGIES = {
     "1": sell_strategy_1,
@@ -268,4 +346,5 @@ SELL_STRATEGIES = {
     "9": sell_strategy_9,
     "a": sell_strategy_a,
     "b": sell_strategy_b,
+    "c": sell_strategy_c,
 }
