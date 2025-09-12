@@ -9,7 +9,7 @@
 """
 
 import adata
-from update_and_plot import update_and_plot
+from plot_stock import plot
 from update_stock import update
 import time
 import os
@@ -47,10 +47,11 @@ def process_code(code, idx, total, ktype, update_only, delay):
         if delay:
             time.sleep(delay)
         print(f"\n[{idx}/{total}] 正在处理股票: {code}")
-        if update_only:
-            update(code, None, None, ktype)
-        else:
-            update_and_plot(code, None, None, ktype)
+        update(code, None, None, ktype)
+        if not update_only:
+            plot(code, ktype, 90)
+            plot(code, ktype, 365)
+            plot(code, ktype, 730)
         return f"✅ {code} 成功"
     except Exception as e:
         return f"⚠️ 股票 {code} 处理失败: {e}"

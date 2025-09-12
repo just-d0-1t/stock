@@ -10,6 +10,7 @@
 
 import argparse
 import os
+import warnings
 import pandas as pd
 from datetime import datetime, timedelta
 import mplfinance as mpf
@@ -101,9 +102,9 @@ def load_data(stock_code, data_path=None):
     return df
 
 
-def plot(stock_code, period, end_date, path, save_dir):
+def plot(stock_code, ktype, period, end_date=None, path=None, save_dir=None):
     if path is None:
-        path = f"{WORK_DIR}/data/{stock_code}_data.csv"
+        path = f"{WORK_DIR}/data/{stock_code}_1_data.csv"
 
     df = load_data(stock_code, path)
     if df is None:
@@ -112,7 +113,9 @@ def plot(stock_code, period, end_date, path, save_dir):
     if save_dir is None:
         save_dir = SAVE_DIR
 
-    plot_kline(df, stock_code, period, end_date, save_dir)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        plot_kline(df, stock_code, ktype, period, end_date, save_dir)
 
 
 # 支持命令行直接调用

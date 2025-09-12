@@ -13,9 +13,7 @@ import os
 import pandas as pd
 from datetime import datetime, timedelta
 import mplfinance as mpf
-from stock_analyzer import StockAnalyzer  # 你之前实现的类
-#from update_kdj import StockAnalyzer  # 你之前实现的类
-from plot import plot_kline
+from fetch_stock_data import StockAnalyzer  # 你之前实现的类
 
 
 WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
