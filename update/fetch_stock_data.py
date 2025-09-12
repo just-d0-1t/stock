@@ -69,9 +69,9 @@ def compute_macd(df, short=12, long=26, signal=9):
         elif df['DIF'].iloc[i-1] > df['DEA'].iloc[i-1] and df['DIF'].iloc[i] < df['DEA'].iloc[i]:
             df.at[i, 'macd_signal'] = 'death_cross'   # 死叉
         else:
-            df.at[i, 'mach_signal'] = 'no_cross'   # 死叉
+            df.at[i, 'macd_signal'] = 'no_cross'   # 死叉
 
-    df.drop(['ema_long', 'ema_short'], axis=1, inplace=True)
+    df.drop(['ema_long', 'ema_short', 'mach_signal'], axis=1, inplace=True)
 
     return df
 
