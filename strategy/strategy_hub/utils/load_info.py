@@ -1,14 +1,12 @@
 import os
 import pandas as pd
-
-WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
-DATA_DIR = f"{WORK_DIR}/data"  # 本地数据路径
+import utils.config as config
 
 
 def load_stock_data(stock_code, path, ktype=1):
     """读取单只股票的 info 和 data 文件，计算市值"""
-    info_file = os.path.join(DATA_DIR, f"{stock_code}_info.csv")
-    data_file = os.path.join(DATA_DIR, f"{stock_code}_{ktype}_data.csv")
+    info_file = config.default_info_path(stock_code)
+    data_file = config.default_data_path(stock_code, ktype)
     if path:
         data_file = path
 

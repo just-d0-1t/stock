@@ -10,13 +10,11 @@
 
 import argparse
 import os
+import utils.config as config
 import pandas as pd
 from datetime import datetime, timedelta
 import mplfinance as mpf
-from fetch_stock_data import StockAnalyzer  # 你之前实现的类
-
-
-WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
+from update.fetch_stock_data import StockAnalyzer  # 你之前实现的类
 
 
 def update_stock_data(stock_code, start_date, data_path=None, ktype=1):
@@ -24,7 +22,7 @@ def update_stock_data(stock_code, start_date, data_path=None, ktype=1):
 #    today = datetime.strptime("2025-09-05", "%Y-%m-%d").date()
 
     if data_path is None:
-        data_path = f"{WORK_DIR}/data/{stock_code}_{ktype}_data.csv"
+        data_path = config.default_data_path(stock_code, ktype)
 
     if not os.path.exists(data_path):
         # 历史文件不存在 → 默认取两年数据
@@ -73,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--date',
                         help='日期，格式: YYYY-MM-DD，默认为今天')
     parser.add_argument('-p', '--path',
-                        help='数据文件保存位置，默认为./stock_data.csv')
+                        help='数据文件保存位置，默认为./stock_ktype_data.csv')
     parser.add_argument('-k', '--ktype',
                         type=int,
                         default=1,

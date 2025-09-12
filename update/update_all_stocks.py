@@ -9,34 +9,23 @@
 """
 
 import adata
-from plot_stock import plot
-from update_stock import update
+from update.plot_stock import plot
+from update.update_stock import update
 import time
 import os
-from glob import glob
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import utils.config as config
 
-
-WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
-DATA_DIR = f"{WORK_DIR}/data"  # 本地数据路径
-
-
-def get_codes_from_local():
-    print("从本地获取A股股票代码...")
-    info_files = glob(os.path.join(DATA_DIR, "*_info.csv"))
-    return [os.path.basename(f).split("_")[0] for f in info_files]
 
 
 def get_codes_from_remote():
-    print("获取所有A股股票代码...")
     res_df = adata.stock.info.all_code()
     res_df = res_df[res_df['list_date'].notna()]  # 过滤未上市股票
     return res_df['stock_code'].tolist()
 
 
 def get_codes_from_file(path):
-    print(f"指定文件股票代码: {path}")
     with open(path, "r", encoding="utf-8") as f:
         return [line.strip() for line in f if line.strip()]
 
@@ -59,11 +48,14 @@ def process_code(code, idx, total, ktype, update_only, delay):
 
 def update_codes(fetch, ktype, path, update_only, delay, workers):
     if fetch == 'remote':
+        print("获取所有A股股票代码...")
         stock_codes = get_codes_from_remote()
     elif fetch == 'file':
+        print(f"指定文件股票代码: {path}")
         stock_codes = get_codes_from_file(path)
     else:
-        stock_codes = get_codes_from_local()
+        print("从本地获取A股股票代码...")
+        stock_codes = config.get_codes_from_local()
 
     print(f"共获取 {len(stock_codes)} 只股票")
 

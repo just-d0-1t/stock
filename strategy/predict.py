@@ -17,11 +17,9 @@ from glob import glob
 from datetime import datetime, timedelta
 
 # 注册策略
-import strategy_hub.fish_tub as fish_tub
-import strategy_hub.hydroplaning as hydroplaning
+import strategy.strategy_hub.fish_tub as fish_tub
 mapping = {
     "fish_tub": fish_tub,
-    "hydroplaning": hydroplaning,
 }
 
 strategy = None

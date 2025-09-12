@@ -13,10 +13,10 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
-from .util.load_info import load_stock_data
+# from .util.load_info import load_stock_data
+from strategy.strategy_hub.utils.load_info import load_stock_data
 
 
-WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
 TARGET_MARKET_CAP = 500e8  # 500亿，单位为元
 
 

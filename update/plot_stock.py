@@ -14,10 +14,9 @@ import warnings
 import pandas as pd
 from datetime import datetime, timedelta
 import mplfinance as mpf
+import utils.config as config
 
 SAVE_DIR = "/usr/local/openresty/nginx/html/download/"
-WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
-
 
 def ensure_dir(path):
     if not os.path.exists(path):
@@ -104,7 +103,7 @@ def load_data(stock_code, data_path=None):
 
 def plot(stock_code, ktype, period, end_date=None, path=None, save_dir=None):
     if path is None:
-        path = f"{WORK_DIR}/data/{stock_code}_1_data.csv"
+        path = config.default_data_path(stock_code, ktype)
 
     df = load_data(stock_code, path)
     if df is None:

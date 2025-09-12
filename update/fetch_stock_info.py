@@ -2,9 +2,8 @@ import adata
 import pandas as pd
 import time
 import os
+import utils.config as config
 
-
-WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
 
 
 def save_data(df: pd.DataFrame, data_path):
@@ -53,7 +52,7 @@ def main():
             df_combined = pd.concat([stock_info_df.reset_index(drop=True), df_shares.reset_index(drop=True)], axis=1)
 
             # 保存
-            path = f"{WORK_DIR}/{code}_info.csv"
+            path = config.default_info_path(code)
             save_data(df_combined, path)
 
             # 防止接口请求过快

@@ -2,10 +2,6 @@ import os
 import pandas as pd
 import adata
 from datetime import datetime
-
-
-WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
-
 import numpy as np
 
 def compute_kdj(df, n=9, k_smooth=3, d_smooth=3):
@@ -94,7 +90,7 @@ class StockAnalyzer:
         if data_path:
             self.data_path = data_path
         else:
-            self.data_path = f"{WORK_DIR}/data/{self.stock_code}_{self.ktype}_data.csv"
+            self.data_path = config.default_data_path(self.stock_code, self.ktype)
 
     def fetch_market_data(self, ktype=1):
         """获取交易数据"""
