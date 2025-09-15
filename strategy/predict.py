@@ -103,8 +103,8 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
 
     operation = {}
     for idx, r in records.iterrows():
-        if idx < 21:
-            continue
+        # if idx < 21:
+        #     continue
 
         # # 隔日早盘买入的逻辑
         # if status["should_buy"]:

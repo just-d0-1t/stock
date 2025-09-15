@@ -18,45 +18,32 @@ from utils.load_info import load_stock_data
 TARGET_MARKET_CAP = 500e8  # 500亿，单位为元
 
 
-def is_ma20_slope_increasing(ma20_recent):
+def is_slope_increasing(arr):
     """
-    判断 MA20 斜率是否递增（趋势加速）
+    判断斜率是否递增（趋势加速）
     """
-    slopes = np.diff(ma20_recent)  # 相邻天数差分
+    slopes = np.diff(arr)  # 相邻天数差分
     return all(slopes[i] >= slopes[i-1] for i in range(1, len(slopes)))
 
 
-def is_ma20_continuous_rising(ma20_recent):
+def is_continuous_rising(arr):
     """
-    判断 MA20 最近 period 个交易日是否持续上涨（绝对值递增）
-    df: 包含 'ma20' 列的 DataFrame，按日期升序排列
-    period: 最近多少天
+    判断数据是否持续上涨
     返回: bool
     """
     # 检查连续递增
-    for i in range(1, len(ma20_recent)):
-        if ma20_recent[i] < ma20_recent[i-1]:
+    for i in range(1, len(arr)):
+        if arr[i] < arr[i-1]:
             return False
     return True
 
 
-def is_macd_continuous_rising(macd_recent):
+def is_rising(arr):
     """
-    判断 MACD 最近是否转强
+    判断指标是否转强
     返回: bool
     """
-    # 检查连续递增
-    for i in range(1, len(macd_recent)):
-        if macd_recent[i] < macd_recent[i-1]:
-            return False
-    return True
-
-
-def first_above_ma20(r):
-    """
-    判断股价是否超过了ma20
-    """
-    return r["first_above_ma20"] == "y"
+    return arr[-1] == max(arr) and len(set(arr)) > 1
 
 
 def reload_data(records, tuning):
@@ -70,19 +57,28 @@ def reload_data(records, tuning):
     # 判断 MA20 斜率是否递增
     for idx in range(len(records)):
         row = records.iloc[idx]
+        records.at[idx, "is_raise"] = row["close"] > row["open"]
         if idx >= 1:
-            records.at[idx, "is_raise"] = row["close"] > row["open"]
             if records.iloc[idx]["kdj_signal"] == "golden_cross" or  records.iloc[idx-1]["kdj_signal"] == "golden_cross":
                 records.at[idx, "recent_kdj_gold"] = "golden_cross"
 
         if idx >= period - 1:
             ma20_recent = records["ma20"].iloc[idx - period + 1: idx + 1].values
             if not np.isnan(ma20_recent).any():
-                records.at[idx, "ma20_slope_up"] = is_ma20_slope_increasing(ma20_recent)
-                records.at[idx, "ma20_rising"] = is_ma20_continuous_rising(ma20_recent)
+                records.at[idx, "ma20_slope_up"] = is_slope_increasing(ma20_recent)
+                records.at[idx, "ma20_rising"] = is_rising(ma20_recent)
             macd_recent = records["MACD"].iloc[idx - period + 1: idx + 1].values
             if not np.isnan(macd_recent).any():
-                records.at[idx, "macd_rising"] = is_macd_continuous_rising(macd_recent)
+                records.at[idx, "macd_rising"] = is_rising(macd_recent)
+
+            k_recent = records["K"].iloc[idx - period + 1: idx + 1].values
+            d_recent = records["D"].iloc[idx - period + 1: idx + 1].values
+            if all(x < y for x, y in zip(k_recent, d_recent)):
+                kd_recent = [x - y for x, y in zip(k_recent, d_recent)]
+                records.at[idx, "cross_ready"] = is_continuous_rising(kd_recent)
+                # records.at[idx, "cross_ready"] = is_rising(kd_recent)
+            else:
+                records.at[idx, "cross_ready"] = False
 
     return records
 
@@ -122,7 +118,7 @@ def load_stock(stock_code, tuning, path, ktype=1):
 def buy_strategy_1(r, status, debug=False):
     desc = "策略1: 基础策略，首次超过ma20，当日涨"
     if debug: print("[debug] buy_strategy_1", r)
-    return first_above_ma20(r) and r["is_raise"], desc
+    return r["first_above_ma20"] == "y" and r["is_raise"], desc
 
 
 """
@@ -152,7 +148,7 @@ def buy_strategy_4(r, status, debug=False):
 
     close_to_ma20 = r["ma20"] > r["close"] and ((r["ma20"] - r["close"]) / r["close"]) < 0.02
 
-    return close_to_ma20, desc
+    return close_to_ma20 and r["is_raise"], desc
 
 
 """
@@ -161,7 +157,16 @@ KDJ出现金叉，MACD转强
 def buy_strategy_5(r, status, debug=False):
     desc = "策略5：KDJ出现金叉，MACD转强"
     if debug: print("[debug] buy_strategy_5", r)
-    return r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"], desc
+    return r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"] and r["is_raise"], desc
+
+
+"""
+KDJ出现金叉，MACD转强
+"""
+def buy_strategy_6(r, status, debug=False):
+    desc = "策略6：KDJ即将出现金叉"
+    if debug: print("[debug] buy_strategy_6", r)
+    return r["cross_ready"] and r["is_raise"], desc
 
 
 BUY_STRATEGIES = {
@@ -170,6 +175,7 @@ BUY_STRATEGIES = {
     "3": buy_strategy_3,
     "4": buy_strategy_4,
     "5": buy_strategy_5,
+    "6": buy_strategy_6,
 }
 
 
