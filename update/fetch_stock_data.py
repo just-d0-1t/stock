@@ -71,13 +71,16 @@ def compute_macd(df, short=12, long=26, signal=9):
         else:
             df.at[i, 'macd_signal'] = 'no_cross'   # 死叉
 
-    df.drop(['ema_long', 'ema_short', 'mach_signal'], axis=1, inplace=True)
+    if 'mach_signal' in df:
+        df.drop(['ema_long', 'ema_short', 'mach_signal'], axis=1, inplace=True)
+    else:
+        df.drop(['ema_long', 'ema_short'], axis=1, inplace=True)
 
     return df
 
 
 class StockAnalyzer:
-    def __init__(self, stock_code: str, start_date: str, data_path: str = None, ktype: int=1):
+    def __init__(self, stock_code: str, start_date: str, end_date: str = None, data_path: str = None, ktype: int=1):
         """
         :param stock_code: 股票代码，例如 '002747'
         :param start_date: 起始日期，例如 '2025-08-01'
@@ -86,6 +89,7 @@ class StockAnalyzer:
         """
         self.stock_code = stock_code
         self.start_date = start_date
+        self.end_date = end_date
         self.ktype = ktype
         if data_path:
             self.data_path = data_path
@@ -97,7 +101,8 @@ class StockAnalyzer:
         res_df = adata.stock.market.get_market(
             stock_code=self.stock_code,
             k_type=self.ktype,
-            start_date=self.start_date
+            start_date=self.start_date,
+            end_date=self.end_date,
         )
         return res_df
 

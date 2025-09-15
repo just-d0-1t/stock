@@ -14,7 +14,7 @@ import numpy as np
 from datetime import datetime, timedelta
 from glob import glob
 
-from load_info import load_stock_data
+from utils.load_info import load_stock_data
 
 
 WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")

@@ -36,7 +36,7 @@ def process_code(code, idx, total, ktype, update_only, delay):
         if delay:
             time.sleep(delay)
         print(f"\n[{idx}/{total}] 正在处理股票: {code}")
-        update(code, None, None, ktype)
+        update(code, None, None, None, ktype)
         if not update_only:
             plot(code, ktype, 90)
             plot(code, ktype, 365)

@@ -12,9 +12,7 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-
-# from .util.load_info import load_stock_data
-from strategy.strategy_hub.utils.load_info import load_stock_data
+from utils.load_info import load_stock_data
 
 
 TARGET_MARKET_CAP = 500e8  # 500亿，单位为元
@@ -179,6 +177,22 @@ BUY_STRATEGIES = {
 # 卖出策略
 # ==========================
 """
+带c打头的策略是条件策略，不单独作为售卖策略，
+是其他策略的补充，组合使用
+"""
+def sell_strategy_c1(r, status, debug=False):
+    desc = "条件1：ma20上升"
+    if debug: print("[debug] sell_strategy_c1", r)
+    return r["ma20_rising"], desc
+
+
+def sell_strategy_c2(r, status, debug=False):
+    desc = "条件1：ma20下降"
+    if debug: print("[debug] sell_strategy_c1", r)
+    return not r["ma20_rising"], desc
+
+
+"""
 基础策略
 """
 def sell_strategy_1(r, status, debug=False):
@@ -188,42 +202,42 @@ def sell_strategy_1(r, status, debug=False):
 
 
 def sell_strategy_2(r, status, debug=False):
-    desc = "策略2：开始跌就卖出"
-    if debug: print("[debug] sell_strategy_2", r["trade_time"], r["close"], r["open"])
-    return r["close"] < r["open"], desc
+    desc = "策略2：KDJ死叉"
+    if debug: print("[debug] sell_strategy_2", r)
+    return r["kdj_signal"] == "death_cross", desc
 
 
 def sell_strategy_3(r, status, debug=False):
-    desc = "策略3：收益率达到3%，就卖出"
-    if debug: print("[debug] sell_strategy_3", r["trade_time"], r["close"], status["buy"])
-    return ((r["close"] - status["buy"]) / status["buy"]) > 0.03, desc
+    desc = "策略3：MACD死叉"
+    if debug: print("[debug] sell_strategy_3", r)
+    return r["macd_signal"] == "death_cross", desc
 
 
 def sell_strategy_4(r, status, debug=False):
     desc = "策略4：持股超过7天，就卖出"
     if debug: print("[debug] sell_strategy_4", status["days"], r["trade_time"])
-    return status["days"] >= 7, desc
+    return len(status["record"]) >= 7, desc
 
 
 def sell_strategy_5(r, status, debug=False):
-    desc = "策略5：跌幅超过1%，卖出"
-    if debug: print("[debug] sell_strategy_5", r["trade_time"], r["close"], r["open"])
-    return ((r["open"] - r["close"]) / r["open"]) > 0.01 or r["close"] < r["ma20"], desc
+    desc = "策略5: 跌破ma5卖出"
+    if debug: print("[debug] sell_strategy_5", r)
+    return r["close"] < r["ma5"], desc
+
+
+def sell_strategy_6(r, status, debug=False):
+    desc = "策略6：跌破ma10卖出"
+    if debug: print("[debug] sell_strategy_7", r)
+    return r["close"] < r["ma10"], desc
 
 
 """
 中性偏激进，要具体分析，如果整体收益很小就要尽快撤出
 """
-def sell_strategy_6(r, status, debug=False):
-    desc = "策略6：跌幅超过2%，卖出"
+def sell_strategy_7(r, status, debug=False):
+    desc = "策略7：跌幅超过2%，卖出"
     if debug: print("[debug] sell_strategy_6", r["trade_time"], r["close"], r["open"])
     return ((r["open"] - r["close"]) / r["open"]) > 0.02, desc
-
-
-def sell_strategy_7(r, status, debug=False):
-    desc = "策略7：大涨5%以上，卖出"
-    if debug: print("[debug] sell_strategy_7", r["trade_time"], r["close"], r["open"])
-    return ((r["close"] - r["open"]) / r["open"]) > 0.05, desc
 
 
 """
@@ -270,13 +284,17 @@ def sell_strategy_b(r, status, debug=False):
                 return True, desc
     return False, desc
 
+
 def sell_strategy_c(r, status, debug=False):
     desc = "策略c：短线策略，第二天直接卖出"
     if debug: print(r, status)
     ok = len(status["record"]) == 2
     return ok, desc
 
+
 SELL_STRATEGIES = {
+    "c1": sell_strategy_c1,
+    "c2": sell_strategy_c2,
     "1": sell_strategy_1,
     "2": sell_strategy_2,
     "3": sell_strategy_3,

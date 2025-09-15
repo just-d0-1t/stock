@@ -89,7 +89,6 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
     status = {
         "sell_strategy": sell_strategy,
         "buy_strategy": buy_strategy,
-        "should_buy": False,
         "hold": False,
         "buy": 0,
         "base": fund,
@@ -107,36 +106,55 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
         if idx < 21:
             continue
 
-        if status["should_buy"]:
-            # 可买入手数，100的整数倍
-            status["hand"] = int(status["fund"] / r["open"] / 100) * 100
-            # 持仓，扣除手续费
-            capital = r["open"] * status["hand"]
-            status["fund"] = status["fund"] - capital
-            status["buy"] = r["open"]
-            if capital * 0.00026 < 5:
-                status["fund"] = status["fund"] - 5
-            else:
-                status["fund"] = status["fund"] - capital * 0.00026
-            operation["trade_time"] = r["trade_time"] 
-            operation["hand"] = status["hand"]
-            operation["price"] = r["open"]
-            operation["capital"] = capital
-            operation["cash_flow"] = status["fund"]
-            operation["rate"] = 0
-            status["operations"].append(operation)
-            operation = {}
-            status["should_buy"] = False
-            status["hold"] = True
+        # # 隔日早盘买入的逻辑
+        # if status["should_buy"]:
+        #     # 可买入手数，100的整数倍
+        #     status["hand"] = int(status["fund"] / r["open"] / 100) * 100
+        #     # 持仓，扣除手续费
+        #     capital = r["open"] * status["hand"]
+        #     status["fund"] = status["fund"] - capital
+        #     status["buy"] = r["open"]
+        #     if capital * 0.00026 < 5:
+        #         status["fund"] = status["fund"] - 5
+        #     else:
+        #         status["fund"] = status["fund"] - capital * 0.00026
+        #     operation["trade_time"] = r["trade_time"] 
+        #     operation["hand"] = status["hand"]
+        #     operation["price"] = r["open"]
+        #     operation["capital"] = capital
+        #     operation["cash_flow"] = status["fund"]
+        #     operation["rate"] = 0
+        #     status["operations"].append(operation)
+        #     operation = {}
+        #     status["should_buy"] = False
+        #     status["hold"] = True
 
         if not status["hold"]:
             ok, desc = buy(r, status, debug)
             if ok:
                 status["should_buy"] = True
                 status["record"].append(r)
-                operation["trggier"] = r["trade_time"]
                 operation["operator"] = "买入"
                 operation["strategy"] = desc
+                # 可买入手数，100的整数倍
+                status["hand"] = int(status["fund"] / r["close"] / 100) * 100
+                # 持仓，扣除手续费
+                capital = r["close"] * status["hand"]
+                status["fund"] = status["fund"] - capital
+                status["buy"] = r["close"]
+                if capital * 0.00026 < 5:
+                    status["fund"] = status["fund"] - 5
+                else:
+                    status["fund"] = status["fund"] - capital * 0.00026
+                operation["trade_time"] = r["trade_time"] 
+                operation["hand"] = status["hand"]
+                operation["price"] = r["close"]
+                operation["capital"] = capital
+                operation["cash_flow"] = status["fund"]
+                operation["rate"] = 0
+                status["operations"].append(operation)
+                operation = {}
+                status["hold"] = True
 
         else:
             status["days"] = status["days"] + 1
@@ -191,9 +209,13 @@ def back_test(code, records, buy_strategy, sell_strategy, path, debug):
             print()
             print()
 
+    capital = 0
+    if len(status["operations"]) > 0:
+        capital = status["operations"][-1]["capital"]
+
     print("============================")
     print("股票代码: %s\n量化策略: %s\n买入策略: %s\n卖出策略: %s\n数据路径: %s" % (code, mode, buy_strategy, sell_strategy, path))
-    print("涨跌: ", (status["fund"] - status["base"]) * 100.0 / status["base"], "%")
+    print("涨跌: ", (status["fund"] + capital - status["base"]) * 100.0 / status["base"], "%")
     print("胜率: 总计 %d 轮操作, 取胜 %d 轮" % (status["win"] + status["lose"], status["win"]))
     print("============================")
     print()
@@ -283,16 +305,25 @@ def excute(stock_code, ktype, operate, mode, mode_tuning, buy_strategy, sell_str
 
     # 回测
     if operate == "back_test":
+        if buy_strategy is None or sell_strategy is None:
+            print(f"回测必须指定买入策略{buy_strategy}，和卖出策略{sell_strategy}") 
+            return
         back_test(stock_code, records, buy_strategy, sell_strategy, path, debug)
 
-    if operate == "predict_buy":
+    if operate == "buy":
+        if buy_strategy is None:
+            print(f"预测买入必须指定买入策略{buy_strategy}") 
+            return
         ok, desc, trade_time = predict_buy(records, buy_strategy, sell_strategy, target_date, debug)
         if ok:
             print(f"推荐买入股票 %s, 代码 %s, 日期 %s" % (stock["stock_name"], stock["stock_code"], trade_time))
             print(desc)
             print()
 
-    if operate == "predict_sell":
+    if operate == "sell":
+        if buy_strategy is None:
+            print(f"预测卖出必须指定卖出策略{sell_strategy}") 
+            return
         ok, desc, trade_time = predict_sell(records, buy_strategy, sell_strategy, debug)
         if ok:
             print(f"推荐卖出股票 %s, 代码 %s, 日期 %s" % (stock["stock_name"], stock["stock_code"], trade_time))

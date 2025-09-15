@@ -17,7 +17,7 @@ import mplfinance as mpf
 from update.fetch_stock_data import StockAnalyzer  # 你之前实现的类
 
 
-def update_stock_data(stock_code, start_date, data_path=None, ktype=1):
+def update(stock_code, start_date, end_date=None, data_path=None, ktype=1):
     today = datetime.today().date()
 #    today = datetime.strptime("2025-09-05", "%Y-%m-%d").date()
 
@@ -28,7 +28,7 @@ def update_stock_data(stock_code, start_date, data_path=None, ktype=1):
         # 历史文件不存在 → 默认取两年数据
         if start_date is None:
             start_date = (today - timedelta(days=730)).strftime("%Y-%m-%d")
-        analyzer = StockAnalyzer(stock_code, start_date, data_path, ktype)
+        analyzer = StockAnalyzer(stock_code, start_date, end_date, data_path, ktype)
         df = analyzer.run()
 
     else:
@@ -47,16 +47,11 @@ def update_stock_data(stock_code, start_date, data_path=None, ktype=1):
             days = 7
         if ktype == 3:
             days = 31
-        start_date = (last_date - timedelta(days=days)).strftime("%Y-%m-%d")
-        analyzer = StockAnalyzer(stock_code, start_date, data_path, ktype)
+        if start_date is None:
+            start_date = (last_date - timedelta(days=days)).strftime("%Y-%m-%d")
+        analyzer = StockAnalyzer(stock_code, start_date, end_date, data_path, ktype)
         df = analyzer.run()
 
-    return df
-
-
-def update(stock_code, date, data_path=None, ktype=1):
-    """模块化函数：更新数据并绘制图表"""
-    df = update_stock_data(stock_code, date, data_path, ktype)
     return df
 
 
@@ -68,8 +63,10 @@ if __name__ == "__main__":
     # 添加命令行参数
     parser.add_argument('-c', '--code', required=True,
                         help='股票代码，例如: 000001.SZ')
-    parser.add_argument('-d', '--date',
-                        help='日期，格式: YYYY-MM-DD，默认为今天')
+    parser.add_argument('-s', '--start_date',
+                        help='开始日期，格式: YYYY-MM-DD，默认为今天')
+    parser.add_argument('-e', '--end_date',
+                        help='结束日期，格式: YYYY-MM-DD，默认为今天')
     parser.add_argument('-p', '--path',
                         help='数据文件保存位置，默认为./stock_ktype_data.csv')
     parser.add_argument('-k', '--ktype',
@@ -80,7 +77,8 @@ if __name__ == "__main__":
     # 解析参数
     args = parser.parse_args()
     code = args.code
-    date = args.date
+    start_date = args.start_date
+    end_date = args.end_date
     path = args.path
     ktype = args.ktype
-    update(code, date, path, ktype)
+    update(code, start_date, end_date, path, ktype)
