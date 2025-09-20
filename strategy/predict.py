@@ -103,8 +103,9 @@ def backtesting(records, buy_strategy, sell_strategy, debug):
 
     operation = {}
     for idx, r in records.iterrows():
-        # if idx < 21:
-        #     continue
+        # 忽略掉初始一些脏数据
+        if idx < 21:
+            continue
 
         # # 隔日早盘买入的逻辑
         # if status["should_buy"]:
@@ -354,7 +355,10 @@ def predict(stock_code, ktype, operate, mode, mode_tuning, buy_strategy, sell_st
         stock_codes = stock_code.split(",")
 
     for code in stock_codes:
-        excute(code, ktype, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, target_date, debug)
+        try:
+            excute(code, ktype, operate, mode, mode_tuning, buy_strategy, sell_strategy, path, target_date, debug)
+        except Exception as e:
+            print( f"⚠️ 股票 {code} 处理失败: {e}")
 
 
 # ==========================

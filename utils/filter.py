@@ -19,7 +19,7 @@ from utils.load_info import load_stock_data
 
 WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
 DATA_DIR = f"{WORK_DIR}/data"  # 本地数据路径
-TARGET_MARKET_CAP = 200e8  # 500亿，单位为元
+TARGET_MARKET_CAP = 500e8  # 500亿，单位为元
 
 
 """

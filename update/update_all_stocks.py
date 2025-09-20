@@ -33,10 +33,12 @@ def get_codes_from_file(path):
 def process_code(code, idx, total, ktype, update_only, delay):
     """单只股票处理逻辑"""
     try:
-        if delay:
+        if not update_only:
             time.sleep(delay)
         print(f"\n[{idx}/{total}] 正在处理股票: {code}")
-        update(code, None, None, None, ktype)
+        df = update(code, None, None, None, ktype)
+        if df.empty:
+            raise ValueError("更新失败")
         if not update_only:
             plot(code, ktype, 90)
             plot(code, ktype, 365)
@@ -73,6 +75,10 @@ def update_codes(fetch, ktype, path, update_only, delay, workers):
 
     print("\n处理完成！")
     print(f"成功 {sum('✅' in r for r in results)} 只，失败 {sum('⚠️' in r for r in results)} 只。")
+    print(f"失败的股票信息如下：")
+    for r in results:
+        if '失败' in r:
+            print(r)
 
 
 if __name__ == "__main__":
@@ -80,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--fetch', required=True, help='指定数据源，local|remote|file')
     parser.add_argument('-p', '--path', help='指定数据文件')
     parser.add_argument('-k', '--ktype', type=int, default=1, help='k线类型')
-    parser.add_argument('-d', '--delay', type=float, default=0, help='请求间延迟（秒）')
+    parser.add_argument('-d', '--delay', type=float, default=0.75, help='请求间延迟（秒）')
     parser.add_argument('-u', '--update', action='store_true', help='仅更新数据，不生成图表')
     parser.add_argument('-w', '--workers', type=int, default=5, help='并发线程数')
     args = parser.parse_args()

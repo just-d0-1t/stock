@@ -219,7 +219,8 @@ class StockAnalyzer:
         print(f"获取股票 {self.stock_code} 自 {self.start_date} 起的数据...")
         new_data = self.fetch_market_data()
         if new_data.empty:
-             print("new_data 是空的 DataFrame")
+            print(f"⚠️ 股票 {self.stock_code} new_data 是空的 DataFrame")
+            return new_data
         history_data = self.load_history()
 
         all_data = self.compute_indicators(new_data, history_data)

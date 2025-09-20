@@ -26,6 +26,7 @@ def update(stock_code, start_date, end_date=None, data_path=None, ktype=1):
 
     if not os.path.exists(data_path):
         # 历史文件不存在 → 默认取两年数据
+        print(data_path)
         if start_date is None:
             start_date = (today - timedelta(days=730)).strftime("%Y-%m-%d")
         analyzer = StockAnalyzer(stock_code, start_date, end_date, data_path, ktype)

@@ -161,21 +161,21 @@ def buy_strategy_5(r, status, debug=False):
 
 
 """
-KDJ出现金叉，MACD转强
+MACD 处于零轴以上
 """
-def buy_strategy_6(r, status, debug=False):
-    desc = "策略6：KDJ即将出现金叉"
-    if debug: print("[debug] buy_strategy_6", r)
-    return r["cross_ready"] and r["is_raise"], desc
+def buy_strategy_c1(r, status, debug=False):
+    desc = "策略6：MACD快线处于零轴以上"
+    if debug: print("[debug] buy_strategy_c1", r)
+    return r["DIF"] >= 0, desc
 
 
 BUY_STRATEGIES = {
+    "c1": buy_strategy_c1,
     "1": buy_strategy_1,
     "2": buy_strategy_2,
     "3": buy_strategy_3,
     "4": buy_strategy_4,
     "5": buy_strategy_5,
-    "6": buy_strategy_6,
 }
 
 
