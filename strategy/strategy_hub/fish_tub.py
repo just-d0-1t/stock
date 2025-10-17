@@ -76,7 +76,7 @@ def reload_data(records, tuning):
             if all(x < y for x, y in zip(k_recent, d_recent)):
                 kd_recent = [x - y for x, y in zip(k_recent, d_recent)]
                 records.at[idx, "cross_ready"] = is_continuous_rising(kd_recent)
-                # records.at[idx, "cross_ready"] = is_rising(kd_recent)
+                records.at[idx, "cross_ready"] = records.at[idx, "cross_ready"] and k_recent[-1] >= k_recent[-2]
             else:
                 records.at[idx, "cross_ready"] = False
 
@@ -161,6 +161,15 @@ def buy_strategy_5(r, status, debug=False):
 
 
 """
+KDJ出现金叉，MACD转强
+"""
+def buy_strategy_6(r, status, debug=False):
+    desc = "策略6：KDJ即将出现金叉"
+    if debug: print("[debug] buy_strategy_6", r)
+    return r["cross_ready"], desc
+
+
+"""
 MACD 处于零轴以上
 """
 def buy_strategy_c1(r, status, debug=False):
@@ -176,6 +185,7 @@ BUY_STRATEGIES = {
     "3": buy_strategy_3,
     "4": buy_strategy_4,
     "5": buy_strategy_5,
+    "6": buy_strategy_6,
 }
 
 
@@ -193,7 +203,7 @@ def sell_strategy_c1(r, status, debug=False):
 
 
 def sell_strategy_c2(r, status, debug=False):
-    desc = "条件1：ma20下降"
+    desc = "条件2：ma20下降"
     if debug: print("[debug] sell_strategy_c1", r)
     return not r["ma20_rising"], desc
 

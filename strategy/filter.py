@@ -25,7 +25,7 @@ TARGET_MARKET_CAP = 500e8  # 500亿，单位为元
 def market_cap_handler(stock, args):
     # 首先检查 args 是否是字典
     if not isinstance(args, dict):
-        return False, f"args should be dict, got {type(args)}"
+        return False, f"market_cap_handler: args should be dict, got {type(args)}"
     
     # 安全地获取值，避免 KeyError
     above = args.get("above")
@@ -43,8 +43,34 @@ def market_cap_handler(stock, args):
     return True, ""
 
 
+def market_handler(stock, args):
+    # 首先检查 args 是否是字典
+    if not isinstance(args, dict):
+        return False, f"market_handler: args should be dict, got {type(args)}"
+    
+    # 安全地获取值，避免 KeyError
+    above = args.get("above")
+    under = args.get("under")
+
+    records = stock["records"]
+    if len(records) <= 0:
+        return False, f"market records is null"
+
+    close = records.iloc[-1]["close"]
+
+    # 检查市值条件
+    if above is not None and close <= above:
+        return False, f"market {close} under above limit {above}"
+    
+    if under is not None and close >= under:
+        return False, f"market {close} exceed under limit {under}"
+
+    return True, ""
+    
+
 filter_handler = {
     "market_cap": market_cap_handler,
+    "market": market_handler,
 }
 
 

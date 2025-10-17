@@ -317,7 +317,8 @@ def excute(stock_code, ktype, operate, mode, mode_tuning, buy_strategy, sell_str
             return
         ok, desc, trade_time = predict_buy(records, buy_strategy, sell_strategy, target_date, debug)
         if ok:
-            print(f"推荐买入股票 %s, 代码 %s, 日期 %s" % (stock["stock_name"], stock["stock_code"], trade_time))
+            close = records.iloc[-1]["close"]
+            print(f"推荐买入股票 %s, 代码 %s, 日期 %s, 最新股价 %s" % (stock["stock_name"], stock["stock_code"], trade_time, close))
             print(desc)
             print()
 
