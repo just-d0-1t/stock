@@ -222,7 +222,7 @@ def back_test(code, records, buy_strategy, sell_strategy, path, debug):
     print()
 
 
-def predict_buy(records, buy_strategy, sell_strategy, target_date, debug):
+def predict_buy(records, buy_strategy, target_date, debug):
     r = records.iloc[-1]
 
     if target_date:
@@ -294,7 +294,7 @@ def excute(stock_code, ktype, operate, mode, mode_tuning, buy_strategy, sell_str
         path = f"{WORK_DIR}/data/{stock_code}_{ktype}_data.csv"
 
     # 加载股票信息
-    ok, stock = strategy.load_stock(stock_code, mode_tuning, path, ktype)
+    ok, stock = strategy.load_stock(stock_code, mode_tuning, path, operate, target_date, ktype)
     if not ok:
         msg = stock
         if debug: print(stock)
@@ -315,7 +315,7 @@ def excute(stock_code, ktype, operate, mode, mode_tuning, buy_strategy, sell_str
         if buy_strategy is None:
             print(f"预测买入必须指定买入策略{buy_strategy}") 
             return
-        ok, desc, trade_time = predict_buy(records, buy_strategy, sell_strategy, target_date, debug)
+        ok, desc, trade_time = predict_buy(records, buy_strategy, target_date, debug)
         if ok:
             close = records.iloc[-1]["close"]
             print(f"推荐买入股票 %s, 代码 %s, 日期 %s, 最新股价 %s" % (stock["stock_name"], stock["stock_code"], trade_time, close))

@@ -46,126 +46,133 @@ def is_rising(arr):
     return arr[-1] == max(arr) and len(set(arr)) > 1
 
 
-def reload_data(records, tuning):
+def reload_data(records, operate, tuning):
+    # ✅ 生成副本，避免 SettingWithCopyWarning
+    records = records.copy()
+
+    # 排序
     records.sort_values("trade_date", inplace=True)
 
     # 策略调优
-    period = 3 # 数据范围: 几天
+    period = 3  # 数据范围: 几天
     if tuning:
         period = int(tuning[0])
 
     # 判断 MA20 斜率是否递增
-    for idx in range(len(records)):
+    def data_processing(idx):
         row = records.iloc[idx]
-        records.at[idx, "is_raise"] = row["close"] > row["open"]
-        if idx >= 1:
-            if records.iloc[idx]["kdj_signal"] == "golden_cross" or  records.iloc[idx-1]["kdj_signal"] == "golden_cross":
-                records.at[idx, "recent_kdj_gold"] = "golden_cross"
+        records.loc[idx, "is_raise"] = row["close"] > row["open"]
 
+        # =================================================================================
+        # 相关策略 buy_strategy_kdj
+        if idx >= period - 1:
+            if records.iloc[idx]["kdj_signal"] == "golden_cross" or records.iloc[idx-1]["kdj_signal"] == "golden_cross":
+                records.loc[idx, "recent_kdj_gold"] = "golden_cross"
+
+            macd_recent = records["MACD"].iloc[idx - period + 1: idx + 1].values
+            if not np.isnan(macd_recent).any():
+                records.loc[idx, "macd_rising"] = is_rising(macd_recent)
+        else:
+            records.loc[idx, "recent_kdj_gold"] = "no_cross"
+            records.loc[idx, "macd_rising"] = False
+        # =================================================================================
+
+        # =================================================================================
+        # 相关策略 buy_strategy_ma20 buy_strategy_ma20_ready
         if idx >= period - 1:
             ma20_recent = records["ma20"].iloc[idx - period + 1: idx + 1].values
             if not np.isnan(ma20_recent).any():
-                records.at[idx, "ma20_slope_up"] = is_slope_increasing(ma20_recent)
-                records.at[idx, "ma20_rising"] = is_rising(ma20_recent)
-            macd_recent = records["MACD"].iloc[idx - period + 1: idx + 1].values
-            if not np.isnan(macd_recent).any():
-                records.at[idx, "macd_rising"] = is_rising(macd_recent)
+                records.loc[idx, "ma20_rising"] = is_rising(ma20_recent)
+        # =================================================================================
 
+        # =================================================================================
+        # 相关策略 buy_strategy_kdj_ready
+        if idx >= period - 1:
             k_recent = records["K"].iloc[idx - period + 1: idx + 1].values
             d_recent = records["D"].iloc[idx - period + 1: idx + 1].values
             if all(x < y for x, y in zip(k_recent, d_recent)):
                 kd_recent = [x - y for x, y in zip(k_recent, d_recent)]
-                records.at[idx, "cross_ready"] = is_continuous_rising(kd_recent)
-                records.at[idx, "cross_ready"] = records.at[idx, "cross_ready"] and k_recent[-1] >= k_recent[-2]
+                records.loc[idx, "cross_ready"] = is_continuous_rising(kd_recent)
+                records.loc[idx, "cross_ready"] = records.loc[idx, "cross_ready"] and k_recent[-1] >= k_recent[-2]
             else:
-                records.at[idx, "cross_ready"] = False
+                records.loc[idx, "cross_ready"] = False
+        # =================================================================================
+
+        # =================================================================================
+        # 相关策略 buy_strategy_volume_spike
+        if idx >= 59:
             window_start = max(0, idx - 59)
             recent_closes = records["close"].iloc[window_start: idx+1].values
             top3_values = sorted(recent_closes, reverse=True)[:3]
-            records.at[idx, "price_top3"] = records["close"].iloc[idx] >= min(top3_values)
+            records.loc[idx, "price_top3"] = records["close"].iloc[idx] >= min(top3_values)
         else:
-            records.at[idx, "price_top3"] = False
+            records.loc[idx, "price_top3"] = False
 
         if idx >= 21:
             max_vol_20 = records["volume"].iloc[idx-21: idx-1].max() * 1.5
-            records.at[idx, "volume_breakout"] = records["volume"].iloc[idx] > max_vol_20 and records["volume"].iloc[idx-1] > max_vol_20
+            records.loc[idx, "volume_breakout"] = records["volume"].iloc[idx] > max_vol_20 and records["volume"].iloc[idx-1] > max_vol_20
         else:
-            records.at[idx, "volume_breakout"] = False
-    
-# ---------------------------
-# 在 reload_data 的循环内部（比如在处理完其他指标后），添加以下代码：
-# ---------------------------
-            # 成交量突增策略判定（需要前 5 天数据：t-4,t-3,t-2,t-1,t）
-            # 我们把结果写入列 "volume_spike_buy"
-            # 规则：
-            #  - t-1 和 t 的成交量都 > mean(t-4,t-3,t-2) * 2
-            #  - 前三天成交量的相对偏差 (std/mean) < 0.4 （可调）
-            #  - 当天收盘价 > 开盘价
-        # if idx >= 6:
-        #     try:
-        #         prev3 = records["volume"].iloc[idx-6: idx-1].values  # t-4, t-3, t-2
-        #         if len(prev3) == 5 and not np.isnan(prev3).any():
-        #             mean_prev3 = prev3.mean()
-        #             cv_prev3 = prev3.std(ddof=0) / mean_prev3 if mean_prev3 > 0 else np.inf
+            records.loc[idx, "volume_breakout"] = False
 
-        #             vol_t_1 = records["volume"].iloc[idx-1]  # 昨天
-        #             vol_t = records["volume"].iloc[idx]      # 今天
-
-        #             cond_vol = (vol_t_1 > 2 * mean_prev3) and (vol_t > 2 * mean_prev3)
-        #             cond_cv = cv_prev3 < 0.4  # 三天成交量偏差不能太大（阈值可调）
-        #             cond_price = row["close"] > row["open"]
-
-        #             records.at[idx, "volume_spike_buy"] = bool(cond_vol and cond_cv and cond_price)
-        #         else:
-        #             records.at[idx, "volume_spike_buy"] = False
-        #     except Exception:
-        #         # 任何异常都视为不满足条件
-        #         records.at[idx, "volume_spike_buy"] = False
-        # else:
-        #     records.at[idx, "volume_spike_buy"] = False
-
-        # === 连续放量策略（2~3天） ===
-        if idx >= 7:
+        if idx >= (period + 1):
             try:
-                # 前5天成交量（用于均值和波动）
-                prev5 = records["volume"].iloc[idx-7: idx-2].values
-                # 最近3天成交量（候选观察期）
+                prevN = records["volume"].iloc[idx- period - 1: idx-1].values
+                if len(prevN) == period and not np.isnan(prevN).any():
+                    mean_prevN = prevN.mean()
+                    cv_prevN = prevN.std(ddof=0) / mean_prevN if mean_prevN > 0 else np.inf
+
+                    vol_t_1 = records["volume"].iloc[idx-1]
+                    vol_t = records["volume"].iloc[idx]
+
+                    cond_stable = (abs(vol_t_1 - vol_t) / vol_t_1 ) < 0.3
+                    cond_vol = (vol_t_1 > 2 * mean_prevN) and (vol_t > 2 * mean_prevN)
+                    cond_cv = cv_prevN < 0.4
+                    cond_price = row["close"] > row["open"]
+
+                    records.loc[idx, "volume_spike_buy"] = bool(cond_stable and cond_vol and cond_cv and cond_price)
+                else:
+                    records.loc[idx, "volume_spike_buy"] = False
+            except Exception:
+                records.loc[idx, "volume_spike_buy"] = False
+        else:
+            records.loc[idx, "volume_spike_buy"] = False
+
+        # === 连续放量策略（3天中有2天） ===
+        if not records.loc[idx, "volume_spike_buy"] and idx >= (period + 2):
+            try:
+                prevN = records["volume"].iloc[idx-period-2: idx-2].values
                 recent3 = records["volume"].iloc[idx-2: idx+1].values
 
                 if (
-                    len(prev5) == 5 and len(recent3) == 3
-                    and not np.isnan(prev5).any()
+                    len(prevN) == 5 and len(recent3) == 3
+                    and not np.isnan(prevN).any()
                     and not np.isnan(recent3).any()
                 ):
-                    mean_prev5 = prev5.mean()
-                    cv_prev5 = prev5.std(ddof=0) / mean_prev5 if mean_prev5 > 0 else np.inf
+                    mean_prevN = prevN.mean()
+                    cv_prevN = prevN.std(ddof=0) / mean_prevN if mean_prevN > 0 else np.inf
 
                     mean_recent3 = recent3.mean()
                     cv_recent3 = recent3.std(ddof=0) / mean_recent3 if mean_recent3 > 0 else np.inf
 
-                    # 1️⃣ 连续三天中至少两天放量 > 前5天均量 × 2
-                    cond_vol_3d = np.sum(recent3 > 2 * mean_prev5) >= 2
-
-                    # 2️⃣ 最近三天的波动不大（平稳放量）
-                    cond_cv_recent3 = cv_recent3 < 0.3  # 可调阈值
-
-                    # 3️⃣ 前五天成交量波动不大（基准期稳定）
-                    cond_cv_prev5 = cv_prev5 < 0.3
-
-                    # 4️⃣ 当天为阳线（价格确认）
+                    cond_vol_3d = np.sum(recent3 > 2 * mean_prevN) >= 2
+                    cond_cv_recent3 = cv_recent3 < 0.3
+                    cond_cv_prevN = cv_prevN < 0.3
                     cond_price = row["close"] > row["open"]
 
-                    records.at[idx, "volume_spike_buy"] = bool(
-                        cond_vol_3d and cond_cv_recent3 and cond_cv_prev5 and cond_price
+                    records.loc[idx, "volume_spike_buy"] = bool(
+                        cond_vol_3d and cond_cv_recent3 and cond_cv_prevN and cond_price
                     )
                 else:
-                    records.at[idx, "volume_spike_buy"] = False
-
+                    records.loc[idx, "volume_spike_buy"] = False
             except Exception:
-                records.at[idx, "volume_spike_buy"] = False
-        else:
-            records.at[idx, "volume_spike_buy"] = False
+                records.loc[idx, "volume_spike_buy"] = False
+        # =================================================================================
 
+    if operate == "back_test":
+        for idx in range(len(records)):
+            data_processing(idx)
+    if operate == "buy" or operate == "sell":
+        data_processing(len(records) - 1)
 
     return records
 
@@ -175,7 +182,7 @@ def reload_data(records, tuning):
 根据市值等条件，过滤掉不满足的股票
 对数据进行预处理
 """
-def load_stock(stock_code, tuning, path, ktype=1):
+def load_stock(stock_code, tuning, path, operate, end_date, ktype=1):
     stock = load_stock_data(stock_code, path, ktype)
     if stock is None:
         return False, "股票信息无法加载"
@@ -190,8 +197,26 @@ def load_stock(stock_code, tuning, path, ktype=1):
     if stock["market_cap"] < market:
         return False, f"股票市值小于 {TARGET_MARKET_CAP} 元"
 
+    # ==========================================
+    # 🔹 截取到指定 end_date 的数据
+    # ==========================================
+    records = stock["records"]
+
+    # 将 end_date 转为 datetime.date 对象
+    if isinstance(end_date, str):
+        end_date = pd.to_datetime(end_date).date()
+
+    # 过滤：取从最早到 end_date（含） 的记录
+    records = records[records["trade_date"].dt.date <= end_date]
+
+    if records.empty:
+        return False, f"没有找到 {end_date} 及以前的交易数据"
+
+    # 进行二次预处理（如 KDJ、MACD、量能策略等）
+    records = reload_data(records, operate, tuning)
+
     # 二次处理数据
-    stock["records"] = reload_data(stock["records"], tuning)
+    stock["records"] = records
 
     return True, stock
 
@@ -200,68 +225,48 @@ def load_stock(stock_code, tuning, path, ktype=1):
 # 买入策略
 # ==========================
 """
-策略1: 首次超过ma20，当日涨
+策略: 首次超过ma20，当日涨
 """
-def buy_strategy_1(r, status, debug=False):
-    desc = "策略1: 基础策略，首次超过ma20，当日涨"
-    if debug: print("[debug] buy_strategy_1", r)
-    return r["first_above_ma20"] == "y" and r["is_raise"], desc
+def buy_strategy_ma20(r, status, debug=False):
+    desc = "策略: 首次超过ma20，且ma20为正, 当日涨"
+    if debug: print("[debug] buy_strategy_ma20", r)
+    return r["first_above_ma20"] == "y" and r["is_raise"] and r["ma20_rising"], desc
 
 
 """
-策略2: 当日涨，且ma20处于加速上升
+策略：即将突破ma20的股票
 """
-def buy_strategy_2(r, status, debug=False):
-    desc = "策略2: 当日涨，且ma20处于加速上升"
-    if debug: print("[debug] buy_strategy_2", r)
-    return r["ma20_slope_up"] and r["is_raise"], desc
-
-
-"""
-策略3：当日涨，斜率为正, 且ma20处于加速上升
-"""
-def buy_strategy_3(r, status, debug=False):
-    desc = "策略3: 当日涨，斜率为正, 且ma20处于加速上升"
-    if debug: print("[debug] buy_strategy_3", r)
-    return r["ma20_rising"] and r["ma20_slope_up"] and r["is_raise"], desc
-
-
-"""
-即将突破ma20的股票
-"""
-def buy_strategy_4(r, status, debug=False):
-    desc = "策略4: 即将突破ma20的股票"
-    if debug: print("[debug] buy_strategy_4", r)
-
+def buy_strategy_ma20_ready(r, status, debug=False):
+    desc = "策略: 即将突破ma20的股票"
+    if debug: print("[debug] buy_strategy_ma20_ready", r)
     close_to_ma20 = r["ma20"] > r["close"] and ((r["ma20"] - r["close"]) / r["close"]) < 0.02
-
-    return close_to_ma20 and r["is_raise"], desc
+    return close_to_ma20 and r["is_raise"] and r["ma20_rising"], desc
 
 
 """
 KDJ出现金叉，MACD转强
 """
-def buy_strategy_5(r, status, debug=False):
-    desc = "策略5：KDJ出现金叉，MACD转强"
-    if debug: print("[debug] buy_strategy_5", r)
+def buy_strategy_kdj(r, status, debug=False):
+    desc = "策略：KDJ出现金叉，MACD转强"
+    if debug: print("[debug] buy_strategy_kdj", r)
     return r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"] and r["is_raise"], desc
 
 
 """
-KDJ出现金叉，MACD转强
+KDJ即将出现金叉
 """
-def buy_strategy_6(r, status, debug=False):
-    desc = "策略6：KDJ即将出现金叉"
-    if debug: print("[debug] buy_strategy_6", r)
+def buy_strategy_kdj_ready(r, status, debug=False):
+    desc = "策略：KDJ即将出现金叉"
+    if debug: print("[debug] buy_strategy_kdj_ready", r)
     return r["cross_ready"], desc
 
 
 """
 MACD 处于零轴以上
 """
-def buy_strategy_c1(r, status, debug=False):
-    desc = "策略6：MACD快线处于零轴以上"
-    if debug: print("[debug] buy_strategy_c1", r)
+def buy_strategy_macd_positive(r, status, debug=False):
+    desc = "策略：MACD快线处于零轴以上"
+    if debug: print("[debug] buy_strategy_macd_positive", r)
     return r["DIF"] >= 0, desc
 
 
@@ -270,38 +275,22 @@ def buy_strategy_c1(r, status, debug=False):
 # ---------------------------
 def buy_strategy_volume_spike(r, status, debug=False):
     """
-    策略7：成交量连续两天 > 前五天均值 * 2，且前五天波动不大，当日收盘 > 开盘
+    策略：成交量连续两天 > 前五天均值 * 2，且前五天波动不大，当日收盘 > 开盘
     依赖字段：records 中已由 reload_data 计算并写入 'volume_spike_buy'
     """
-    desc = "策略7：成交量连续两天背离（> 前五天均值*2）且前五天波动小，当日收盘大于开盘"
+    desc = "策略：放量识别"
     if debug: print("[debug] buy_strategy_volume_spike", r)
     # r 可能是 pandas Series，使用 get 以防 KeyError
-    return bool(r.get("volume_spike_buy", False)), desc
-
-
-def buy_strategy_volume_breakout(r, status, debug=False):
-    desc = "策略8：量能突破（当日成交量超过近20交易日最高量x1.5）"
-    if debug: print("[debug] buy_strategy_volume_breakout", r)
-    return bool(r.get("volume_breakout", False)), desc
-
-
-def buy_strategy_price_top3(r, status, debug=False):
-    desc = "策略9：价格强势（收盘价为近3个月Top3）"
-    if debug: print("[debug] buy_strategy_price_top3", r)
-    return bool(r.get("price_top3", False)), desc
+    return bool(r.get("volume_spike_buy", False)) and bool(r.get("volume_breakout", False)) and bool(r.get("price_top3", False)), desc
 
 
 BUY_STRATEGIES = {
-    "c1": buy_strategy_c1,
-    "1": buy_strategy_1,
-    "2": buy_strategy_2,
-    "3": buy_strategy_3,
-    "4": buy_strategy_4,
-    "5": buy_strategy_5,
-    "6": buy_strategy_6,
-    "7": buy_strategy_volume_spike,
-    "8": buy_strategy_volume_breakout,  # 新增：量能突破
-    "9": buy_strategy_price_top3,       # 新增：价格Top3
+    "c1": buy_strategy_macd_positive,
+    "1": buy_strategy_ma20,
+    "2": buy_strategy_ma20_ready,
+    "3": buy_strategy_kdj,
+    "4": buy_strategy_kdj_ready,
+    "5": buy_strategy_volume_spike,
 }
 
 
