@@ -79,6 +79,93 @@ def reload_data(records, tuning):
                 records.at[idx, "cross_ready"] = records.at[idx, "cross_ready"] and k_recent[-1] >= k_recent[-2]
             else:
                 records.at[idx, "cross_ready"] = False
+            window_start = max(0, idx - 59)
+            recent_closes = records["close"].iloc[window_start: idx+1].values
+            top3_values = sorted(recent_closes, reverse=True)[:3]
+            records.at[idx, "price_top3"] = records["close"].iloc[idx] >= min(top3_values)
+        else:
+            records.at[idx, "price_top3"] = False
+
+        if idx >= 21:
+            max_vol_20 = records["volume"].iloc[idx-21: idx-1].max() * 1.5
+            records.at[idx, "volume_breakout"] = records["volume"].iloc[idx] > max_vol_20 and records["volume"].iloc[idx-1] > max_vol_20
+        else:
+            records.at[idx, "volume_breakout"] = False
+    
+# ---------------------------
+# 在 reload_data 的循环内部（比如在处理完其他指标后），添加以下代码：
+# ---------------------------
+            # 成交量突增策略判定（需要前 5 天数据：t-4,t-3,t-2,t-1,t）
+            # 我们把结果写入列 "volume_spike_buy"
+            # 规则：
+            #  - t-1 和 t 的成交量都 > mean(t-4,t-3,t-2) * 2
+            #  - 前三天成交量的相对偏差 (std/mean) < 0.4 （可调）
+            #  - 当天收盘价 > 开盘价
+        # if idx >= 6:
+        #     try:
+        #         prev3 = records["volume"].iloc[idx-6: idx-1].values  # t-4, t-3, t-2
+        #         if len(prev3) == 5 and not np.isnan(prev3).any():
+        #             mean_prev3 = prev3.mean()
+        #             cv_prev3 = prev3.std(ddof=0) / mean_prev3 if mean_prev3 > 0 else np.inf
+
+        #             vol_t_1 = records["volume"].iloc[idx-1]  # 昨天
+        #             vol_t = records["volume"].iloc[idx]      # 今天
+
+        #             cond_vol = (vol_t_1 > 2 * mean_prev3) and (vol_t > 2 * mean_prev3)
+        #             cond_cv = cv_prev3 < 0.4  # 三天成交量偏差不能太大（阈值可调）
+        #             cond_price = row["close"] > row["open"]
+
+        #             records.at[idx, "volume_spike_buy"] = bool(cond_vol and cond_cv and cond_price)
+        #         else:
+        #             records.at[idx, "volume_spike_buy"] = False
+        #     except Exception:
+        #         # 任何异常都视为不满足条件
+        #         records.at[idx, "volume_spike_buy"] = False
+        # else:
+        #     records.at[idx, "volume_spike_buy"] = False
+
+        # === 连续放量策略（2~3天） ===
+        if idx >= 7:
+            try:
+                # 前5天成交量（用于均值和波动）
+                prev5 = records["volume"].iloc[idx-7: idx-2].values
+                # 最近3天成交量（候选观察期）
+                recent3 = records["volume"].iloc[idx-2: idx+1].values
+
+                if (
+                    len(prev5) == 5 and len(recent3) == 3
+                    and not np.isnan(prev5).any()
+                    and not np.isnan(recent3).any()
+                ):
+                    mean_prev5 = prev5.mean()
+                    cv_prev5 = prev5.std(ddof=0) / mean_prev5 if mean_prev5 > 0 else np.inf
+
+                    mean_recent3 = recent3.mean()
+                    cv_recent3 = recent3.std(ddof=0) / mean_recent3 if mean_recent3 > 0 else np.inf
+
+                    # 1️⃣ 连续三天中至少两天放量 > 前5天均量 × 2
+                    cond_vol_3d = np.sum(recent3 > 2 * mean_prev5) >= 2
+
+                    # 2️⃣ 最近三天的波动不大（平稳放量）
+                    cond_cv_recent3 = cv_recent3 < 0.3  # 可调阈值
+
+                    # 3️⃣ 前五天成交量波动不大（基准期稳定）
+                    cond_cv_prev5 = cv_prev5 < 0.3
+
+                    # 4️⃣ 当天为阳线（价格确认）
+                    cond_price = row["close"] > row["open"]
+
+                    records.at[idx, "volume_spike_buy"] = bool(
+                        cond_vol_3d and cond_cv_recent3 and cond_cv_prev5 and cond_price
+                    )
+                else:
+                    records.at[idx, "volume_spike_buy"] = False
+
+            except Exception:
+                records.at[idx, "volume_spike_buy"] = False
+        else:
+            records.at[idx, "volume_spike_buy"] = False
+
 
     return records
 
@@ -178,6 +265,32 @@ def buy_strategy_c1(r, status, debug=False):
     return r["DIF"] >= 0, desc
 
 
+# ---------------------------
+# 在 BUY_STRATEGIES 的函数组里，新增策略函数（放到现有 buy_strategy_* 定义的后面）
+# ---------------------------
+def buy_strategy_volume_spike(r, status, debug=False):
+    """
+    策略7：成交量连续两天 > 前五天均值 * 2，且前五天波动不大，当日收盘 > 开盘
+    依赖字段：records 中已由 reload_data 计算并写入 'volume_spike_buy'
+    """
+    desc = "策略7：成交量连续两天背离（> 前五天均值*2）且前五天波动小，当日收盘大于开盘"
+    if debug: print("[debug] buy_strategy_volume_spike", r)
+    # r 可能是 pandas Series，使用 get 以防 KeyError
+    return bool(r.get("volume_spike_buy", False)), desc
+
+
+def buy_strategy_volume_breakout(r, status, debug=False):
+    desc = "策略8：量能突破（当日成交量超过近20交易日最高量x1.5）"
+    if debug: print("[debug] buy_strategy_volume_breakout", r)
+    return bool(r.get("volume_breakout", False)), desc
+
+
+def buy_strategy_price_top3(r, status, debug=False):
+    desc = "策略9：价格强势（收盘价为近3个月Top3）"
+    if debug: print("[debug] buy_strategy_price_top3", r)
+    return bool(r.get("price_top3", False)), desc
+
+
 BUY_STRATEGIES = {
     "c1": buy_strategy_c1,
     "1": buy_strategy_1,
@@ -186,6 +299,9 @@ BUY_STRATEGIES = {
     "4": buy_strategy_4,
     "5": buy_strategy_5,
     "6": buy_strategy_6,
+    "7": buy_strategy_volume_spike,
+    "8": buy_strategy_volume_breakout,  # 新增：量能突破
+    "9": buy_strategy_price_top3,       # 新增：价格Top3
 }
 
 
