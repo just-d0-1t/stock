@@ -14,5 +14,10 @@ def default_info_path(code):
 
 def get_codes_from_local(data_dir=DATA_DIR):
     info_files = glob(os.path.join(data_dir, "*_info.csv"))
-    return [os.path.basename(f).split("_")[0] for f in info_files]
-
+    codes = [os.path.basename(f).split("_")[0] for f in info_files]
+    
+    # 写入临时文件
+    with open("/tmp/localfilelist.tmp", "w") as f:
+        f.write("\n".join(codes))
+    
+    return codes
