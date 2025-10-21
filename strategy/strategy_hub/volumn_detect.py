@@ -48,11 +48,13 @@ def pretreatment(stock, operate, tuning, debug):
     volumn_period = tuning.get("volumn_period", 20)
     price_period = tuning.get("price_period", 60)
     volumn_slope = tuning.get("volumn_slope", 0.3)
+    rise = tuning.get("rise", 0.3)
 
     # ✅ 预先创建列，避免 SettingWithCopy 警告
     records["price_top3"] = False
     records["volume_breakout"] = False
     records["volume_spike_buy"] = False
+    records["rise_change"] = False
 
     if debug:
         print("period ", period)
@@ -86,6 +88,15 @@ def pretreatment(stock, operate, tuning, debug):
             cond_volumn_slope = ( abs(recent3[0] - recent3[1]) / max(recent3[0], recent3[1]) ) < volumn_slope
             records.loc[idx, "volume_breakout"] = cond_head_tail and cond_volumn_slope 
 
+        # === 涨幅不要过高 ===
+        # 当前收盘价
+        current_price = records["close"].iloc[idx]
+        # 前5天收盘价
+        pre_price = records["close"].iloc[idx - 4]
+        # 计算涨幅
+        rise_pct = (current_price - pre_price) / pre_price
+        records.loc[idx, "rise_change"] = rise_pct < rise
+
     # ✅ 调度模式：批量 or 单点处理
     if operate == "back_test":
         for idx in range(len(records)):
@@ -108,22 +119,26 @@ def buy(r, status, debug=False):
     cond_1 = r["close"] > r["open"]
     cond_2 = bool(r.get("volume_breakout", False))
     cond_3 = bool(r.get("price_top3", False))
+    cond_4 = bool(r.get("rise_change", False))
     if debug:
         print(desc, " ", cond_1)
         print(desc, " ", cond_2)
         print(desc, " ", cond_3)
-    return cond_1 and cond_2 and cond_3, desc
+        print(desc, " ", cond_4)
+    return cond_1 and cond_2 and cond_3 and cond_4, desc
 
 
 # ==========================
 # 卖出策略
 # ==========================
 def sell(r, status, debug=False):
-    if debug: print("[debug] sell_strategy_4", status["days"], r["trade_time"])
-    if r["close"] < r["ma5"]:
-        return True, "跌破ma5"
-    if ((r["open"] - r["close"]) / r["open"]) > 0.03:
-        return True, "单日跌超3%"
-    if len(status["record"]) == 2 and status["record"][1]["close"] < status["record"][1]["open"]:
-        return True, "买入第二日即下跌"
+    if debug: print("[debug] ", r)
+    # if r["close"] < r["ma5"]:
+    #     return True, "跌破ma5"
+    # if ((r["open"] - r["close"]) / r["open"]) > 0.03:
+    #     return True, "单日跌超3%"
+    # if len(status["record"]) == 2 and status["record"][1]["close"] < status["record"][1]["open"]:
+    #     return True, "买入第二日即下跌"
+    if len(status["record"]) == 6:
+        return True, "持有股票第6天卖出"
     return False, ""
