@@ -33,11 +33,12 @@ def get_codes_from_file(path):
 def process_code(code, idx, total, ktype, update_only, delay):
     """单只股票处理逻辑"""
     try:
-        if not update_only:
+        if update_only:
             time.sleep(delay)
         print(f"\n[{idx}/{total}] 正在处理股票: {code}")
         df = update(code, None, None, None, ktype)
         if df.empty:
+            time.sleep(delay)
             raise ValueError("更新失败")
         if not update_only:
             plot(code, ktype, 90)

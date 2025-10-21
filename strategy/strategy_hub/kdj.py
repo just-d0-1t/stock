@@ -38,6 +38,8 @@ def pretreatment(stock, operate, tuning, debug):
         if idx >= period - 1:
             if records.iloc[idx]["kdj_signal"] == "golden_cross" or records.iloc[idx-1]["kdj_signal"] == "golden_cross":
                 records.loc[idx, "recent_kdj_gold"] = "golden_cross"
+            else:
+                records.loc[idx, "recent_kdj_gold"] = "no_cross"
 
             macd_recent = records["MACD"].iloc[idx - period + 1: idx + 1].values
             if not np.isnan(macd_recent).any():
