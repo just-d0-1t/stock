@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from utils.load_info import load_stock_data
 
 
-TARGET_MARKET_CAP = 500e8  # 500亿，单位为元
+TARGET_MARKET_CAP = 0  # 500亿，单位为元
 
 
 def reload_data(records, tuning):

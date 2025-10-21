@@ -11,6 +11,7 @@
 import argparse
 import os
 import re
+import sys
 import pandas as pd
 import numpy as np
 
@@ -225,7 +226,13 @@ def predict(code, ktype, operate, mode, tuning, cond, path, target_date, debug):
     else:
         codes = code.split(",")
 
+    idx = 1
+    count = len(codes)
     for code in codes:
+        # 每次迭代输出进度到标准错误（stderr）
+        sys.stderr.write(f"处理进度 [ {idx} / {count} ]\n")
+        sys.stderr.flush()
+        idx=idx+1
         try:
             excute(
                 code,
