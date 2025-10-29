@@ -231,7 +231,7 @@ def get_codes_from_file(path):
     return lines
 
 
-def predict(code, ktype, operate, mode, tuning, cond, path, target_date, debug, cache, progress_callback=None):
+def predict(code, ktype, operate, mode, tuning, cond, path, target_date, debug, cache, progress_callback=None, stop_flag=None):
     # 生成缓存文件名
     cache_base = os.path.join(DATA_DIR, "cache")
     cache_filename = generate_cache_filename(code, ktype, operate, mode, tuning, cond, path, target_date)
@@ -264,6 +264,11 @@ def predict(code, ktype, operate, mode, tuning, cond, path, target_date, debug, 
         if progress_callback:
             progress_callback(idx, count, code)
         idx = idx + 1
+
+        if stop_flag and stop_flag.is_set():
+            print(">>> 用户终止任务")
+            return
+
         try:
             ok, res = excute(
                 code,
