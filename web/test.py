@@ -117,7 +117,7 @@ def worker_predict(code, operate, mode, tuning, cond, path, target_date, debug, 
 
         # 调用 predict
         backtest.predict(
-            code, "1", operate, mode, tuning, cond, path, date_str, debug,
+            code, "1", operate, mode, tuning, cond, path, date_str, debug, False,
             progress_callback=progress_callback  # ✅ 新增回调
         )
 

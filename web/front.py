@@ -105,7 +105,7 @@ def worker_predict(code, operate, mode, tuning, cond, path, target_date, debug):
         print(">>> 输出将实时显示，请耐心等待。")
 
         # 调用核心回测逻辑
-        backtest.predict(code, "1", operate, mode, tuning, cond, path, date_str, debug)
+        backtest.predict(code, "1", operate, mode, tuning, cond, path, date_str, False, debug)
 
         print(">>> 后端脚本执行完成。")
     except Exception as e:
