@@ -134,7 +134,8 @@ class Predictor:
         # 加载股票数据
         ok, stock = load_stock(code, cond, path, target_date, ktype)
         if not ok:
-            self.log(f"⚠️ 股票 {code} 数据加载失败: {stock}")
+            if debug:
+                self.log(f"⚠️ 股票 {code} 数据加载失败: {stock}")
             return False, ""
 
         # 数据预处理
