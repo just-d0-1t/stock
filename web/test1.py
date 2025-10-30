@@ -89,6 +89,7 @@ def worker_predict(code, operate, mode, tuning, cond, target_date, q: queue.Queu
             backtest.predict(
                 c, "1", operate, mode, tuning, cond, None, date_str, None, False,
                 progress_callback=progress_callback,
+                log_callback=print_q,
                 stop_flag=stop_flag  # 传入 stop_flag
             )
             time.sleep(0.1)
