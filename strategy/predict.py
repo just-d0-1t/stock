@@ -23,12 +23,14 @@ import strategy.strategy_hub.fish_tub as fish_tub
 import strategy.strategy_hub.kdj as kdj
 import strategy.strategy_hub.kdj_ready as kdj_ready
 import strategy.strategy_hub.volumn_detect as volumn_detect
+import strategy.strategy_hub.low_volumn_pullback as low_volumn_pullback
 
 mapping = {
     "kdj": kdj,
     "kdj_ready": kdj_ready,
     "fish_tub": fish_tub,
     "volumn_detect": volumn_detect,
+    "low_volumn_pullback": low_volumn_pullback,
 }
 
 WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")

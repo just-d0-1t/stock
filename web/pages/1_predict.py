@@ -29,7 +29,7 @@ with col1:
     operate = st.selectbox("操作", options=["buy", "back_test"], index=0)
     today = date.today()
     target_date = st.date_input("时间（仅 predict 有效）", value=today)
-    mode = st.selectbox("量化策略", options=["fish_tub", "kdj", "volumn_detect"], index=2)
+    mode = st.selectbox("量化策略", options=["fish_tub", "kdj", "volumn_detect", "low_volumn_pullback"], index=2)
 
     tuning_string = ""
     if mode == "volumn_detect":
