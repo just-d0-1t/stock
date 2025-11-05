@@ -53,26 +53,15 @@ def fetch_stock(code, stock_info, idx, total, delay=1):
 def fetch(workers, delay=1):
     # 1. 获取所有大A股票代码
     print("获取所有A股股票代码...")
-    res_df = adata.stock.info.all_code()
-
-    # 过滤掉没有上市日期的股票（可选）
-    res_df = res_df[res_df['list_date'].notna()]
-
-    stock_codes = res_df['stock_code'].tolist()
-    print(f"共获取 {len(stock_codes)} 只股票")
-#    try:
-#        # 1. 获取所有大A股票代码
-#        print("获取所有A股股票代码...")
-#        res_df = adata.stock.info.all_code()
-#
-#        # 过滤掉没有上市日期的股票（可选）
-#        res_df = res_df[res_df['list_date'].notna()]
-#
-#        stock_codes = res_df['stock_code'].tolist()
-#        print(f"共获取 {len(stock_codes)} 只股票")
-#    except Exception as e:
-#        print(f"⚠️ 获取A股代码失败: {e}")
-#        return
+    try:
+        res_df = adata.stock.info.all_code()
+        # 过滤掉没有上市日期的股票（可选）
+        res_df = res_df[res_df['list_date'].notna()]
+        stock_codes = res_df['stock_code'].tolist()
+        print(f"共获取 {len(stock_codes)} 只股票")
+    except Exception as e:
+        print(f"获取股票失败")
+        return
 
     # 并发执行
     results = []
