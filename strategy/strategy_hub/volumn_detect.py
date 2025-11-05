@@ -133,12 +133,6 @@ def buy(r, status, debug=False):
 # ==========================
 def sell(r, status, debug=False):
     if debug: print("[debug] ", r)
-    # if r["close"] < r["ma5"]:
-    #     return True, "跌破ma5"
-    # if ((r["open"] - r["close"]) / r["open"]) > 0.03:
-    #     return True, "单日跌超3%"
-    # if len(status["record"]) == 2 and status["record"][1]["close"] < status["record"][1]["open"]:
-    #     return True, "买入第二日即下跌"
-    if len(status["record"]) == 6:
-        return True, "持有股票第6天卖出"
+    if len(status["record"]) == 3:
+        return True, "持有股票第3天卖出"
     return False, ""

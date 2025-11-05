@@ -32,7 +32,7 @@ def encrypt_path(path: str) -> str:
 # -------------------------
 # 单模型执行函数
 # -------------------------
-def run_predict(model: str, cond = None):
+def run_predict(model: str, cond = None, code: str = "all"):
     """执行单个模型预测任务"""
     predictor = Predictor(model)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -44,7 +44,7 @@ def run_predict(model: str, cond = None):
     try:
         # 调用predict方法
         result = predictor.predict(
-            code="all",
+            code=code,
             ktype=1,
             operate="buy",
             tuning="",
@@ -85,9 +85,13 @@ if __name__ == "__main__":
     threads = []
     cond=None
     for model in MODELS:
+        code = "all"
+        cond = None
         if model == "kdj":
-            cond = "50000000000" 
-        t = threading.Thread(target=run_predict, args=(model, cond))
+            code = "file,config/above_200e.code" 
+        if model == "volumn_detect":
+            code = "file,config/zf5_top500.code" 
+        t = threading.Thread(target=run_predict, args=(model, cond, code))
         t.start()
         threads.append(t)
 
