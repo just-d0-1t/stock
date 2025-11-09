@@ -88,9 +88,9 @@ if __name__ == "__main__":
         code = "all"
         cond = None
         if model == "kdj":
-            code = "file,config/above_200e.code" 
+            code = "file,data/above_200e.code" 
         if model == "volumn_detect":
-            code = "file,config/zf5_top500.code" 
+            code = "file,data/zf5_top500.code" 
         t = threading.Thread(target=run_predict, args=(model, cond, code))
         t.start()
         threads.append(t)

@@ -18,7 +18,8 @@ import os
 now = datetime.now()
 date_str = now.strftime("%Y-%m-%d")
 
-output_file = f"data/{date_str}_market.txt"
+output_file = f"data/{date_str}_zf5.txt"
+output_code_file = f"data/zf5_top500.txt"
 
 if os.path.exists(output_file):
     print(f"✅ 文件已存在，直接使用：{output_file}")
@@ -29,16 +30,16 @@ if os.path.exists(output_file):
 # -----------------------
 BASE_URL = (
     "http://push2.eastmoney.com/api/qt/clist/get"
-    "?np=1&fltt=1&invt=2"
+    "?fid=f109&po=1&pz=100&pn=1&np=1&fltt=2&invt=2"
+    "&ut=8dec03ba335b81bf4ebdf7b29ec27d15"
     "&fs=m%3A0%2Bt%3A6%2Bf%3A!2%2C"
+    "m%3A0%2Bt%3A13%2Bf%3A!2%2C"
     "m%3A0%2Bt%3A80%2Bf%3A!2%2C"
     "m%3A1%2Bt%3A2%2Bf%3A!2%2C"
     "m%3A1%2Bt%3A23%2Bf%3A!2%2C"
-    "m%3A0%2Bt%3A81%2Bs%3A262144%2Bf%3A!2"
-    "&fields=f12%2Cf13%2Cf14%2Cf17%2Cf20"
-    "&fid=f20&pz=100&po=1&dect=1"
-    "&ut=fa5fd1943c7b386f172d6893dbfba10b"
-    "&wbp2u=%7C0%7C1%7C0%7Cweb"
+    "m%3A0%2Bt%3A7%2Bf%3A!2%2C"
+    "m%3A1%2Bt%3A3%2Bf%3A!2"
+    "&fields=f12%2Cf14%2Cf109"
 )
 HEADERS = {
     "User-Agent": (
@@ -97,27 +98,21 @@ def fetch_page(page, retries=6):
 # 主流程
 # -----------------------
 all_stocks = []
-for page in range(1, 11):
+all_codes = []
+for page in range(1, 7):
     print(f"📄 正在拉取第 {page} 页...")
     rows = fetch_page(page)
     for item in rows:
-        price = item.get("f17")
-        try:
-            price_int = int(price)
-            if price_int > 6000:
-                continue
-        except Exception as e:
-            print(f"price {price} convert error")
-
-        exclude_prefixes = ("300", "688", "8")  # 定义要排除的板块前缀
         code = item.get("f12")
-        if code.startswith(exclude_prefixes):
-            continue
-
         name = item.get("f14")
-        market_value = item.get("f20")
-        if code and name and market_value:
-            all_stocks.append(f"{code}\t{name}\t{market_value}")
+        # 排除ST股
+        if "ST" in name:
+            continue
+        zf = item.get("f109")
+        if code and name and zf:
+            all_stocks.append(f"{code}\t{name}\t{zf}")
+        if code:
+            all_codes.append(f"{code}")
     time.sleep(5)
 
 # -----------------------
@@ -125,5 +120,7 @@ for page in range(1, 11):
 # -----------------------
 with open(output_file, "w", encoding="utf-8") as f:
     f.write("\n".join(all_stocks))
+with open(output_code_file, "w", encoding="utf-8") as f:
+    f.write("\n".join(all_codes))
 
 print(f"✅ 共获取 {len(all_stocks)} 条股票记录，已写入 {output_file}")

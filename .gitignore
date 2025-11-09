@@ -4,3 +4,4 @@ config/
 nohup.out
 access.log
 error.log
+log/

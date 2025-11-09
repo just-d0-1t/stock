@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 import os
 from datetime import date
 
+# https://data.eastmoney.com/zjlx/detail.html
+
 HEADERS = {
     "Cookie": "searchGuide=sg; __utma=156575163.286450060.1760713645.1760713645.1760713645.1; __utmz=156575163.1760713645.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none);",
     "hexin-v": "Ax9DIgoZiypRb482joLQgF7grnishHMmjdh3GrFsu04VQDFmuVQDdp2oB2jC",
