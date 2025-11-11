@@ -177,7 +177,9 @@ class Predictor:
             ok, desc = self.buy(r, {}, debug)
             if ok:
                 close = r["close"]
-                res = f"推荐买入股票 {stock['stock_name']}, 代码 {stock['stock_code']}, 日期 {r['trade_time']}, 最新股价 {close}\n{desc}\n"
+                market = round(stock['market_cap'] / 10000 / 10000, 2)
+                amount = round(stock['amount'] / 10000 / 10000, 2)
+                res = f"推荐买入股票 {stock['stock_name']}, 代码 {stock['stock_code']}, 日期 {r['trade_time']}, 最新股价 {close}, 市值 {market} 亿, 昨日成交额 {amount} 亿\n{desc}\n"
                 self.log(res)
                 return True, res
 

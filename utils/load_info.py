@@ -35,6 +35,7 @@ def load_stock_data(stock_code, path, ktype=1):
 
     # 计算市值（上一日收盘价 * 最新流通A股股本）
     prev_close = df_data.loc[len(df_data)-2, "close"]
+    amount = df_data.loc[len(df_data)-2, "amount"]
     market_cap = prev_close * latest_info["list_a_shares"]
 
     return {
@@ -43,5 +44,6 @@ def load_stock_data(stock_code, path, ktype=1):
         "info": df_info,
         "exchange": latest_info["exchange"],
         "market_cap": market_cap,
-        "records": df_data
+        "records": df_data,
+        "amount": amount,
     }

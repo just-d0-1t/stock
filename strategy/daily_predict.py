@@ -89,6 +89,7 @@ if __name__ == "__main__":
         cond = None
         if model == "kdj":
             code = "file,data/above_200e.code" 
+            cond = "amount=300000000,market=12000000000"
         if model == "volumn_detect":
             code = "file,data/zf5_top500.code" 
         t = threading.Thread(target=run_predict, args=(model, cond, code))

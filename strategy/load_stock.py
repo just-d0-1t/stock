@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from utils.load_info import load_stock_data
+from utils.parse import parse_tuning
 
 
 TARGET_MARKET_CAP = 0  # 500亿，单位为元
@@ -32,15 +33,16 @@ def load_stock(stock_code, tuning, path, end_date, ktype=1):
     if stock is None:
         return False, "股票信息无法加载"
 
-    tuning = tuning.split(",") if tuning else []
+    t_arr = parse_tuning(tuning)
+    market = t_arr.get("market", 0)
+    amount = t_arr.get("amount", 0)
 
     # 条件1：市值大于 500亿
-    market = TARGET_MARKET_CAP
-    if tuning and len(tuning) > 0:
-        market = int(tuning[0])
-
     if stock["market_cap"] < market:
-        return False, f"股票市值小于 {TARGET_MARKET_CAP} 元"
+        return False, f"股票市值小于 {market} 元"
+
+    if stock["amount"] < amount:
+        return False, f"股票成交额小于 {amount} 元"
 
     # ==========================================
     # 🔹 截取到指定 end_date 的数据
