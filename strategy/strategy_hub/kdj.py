@@ -22,6 +22,17 @@ def is_rising(arr):
     """
     return arr[-1] == max(arr) and len(set(arr)) > 1
 
+def is_continuous_rising(arr):
+    """
+    判断数据是否持续上涨
+    返回: bool
+    """
+    # 检查连续递增
+    for i in range(1, len(arr)):
+        if arr[i] < arr[i-1]:
+            return False
+    return True
+
 
 def pretreatment(stock, operate, tuning, debug):
     # ✅ 生成副本，避免 SettingWithCopyWarning
@@ -48,6 +59,26 @@ def pretreatment(stock, operate, tuning, debug):
             records.loc[idx, "recent_kdj_gold"] = "no_cross"
             records.loc[idx, "macd_rising"] = False
 
+        # ===================
+        # 60日趋势判断
+        # ===================
+        if idx >= 59:
+            close_60 = records["close"].iloc[idx - 59: idx + 1].values
+            # 方案1（线性拟合斜率）
+            x = np.arange(len(close_60))
+            slope = np.polyfit(x, close_60, 1)[0]
+            records.loc[idx, "trend_up_60"] = slope > 0
+            # 方案2（简化判断）：末价大于首价
+            # records.loc[idx, "trend_up_60"] = close_60[-1] > close_60[0]
+        else:
+            records.loc[idx, "trend_up_60"] = False
+
+        # 判断 MA20 斜率是否递增
+        if idx >= period - 1:
+            ma20_recent = records["ma20"].iloc[idx - period + 1: idx + 1].values
+            if not np.isnan(ma20_recent).any():
+                records.loc[idx, "ma20_rising"] = is_continuous_rising(ma20_recent)
+
     if operate == "back_test":
         for idx in range(len(records)):
             data_processing(idx)
@@ -64,7 +95,13 @@ def buy(r, status, debug=False):
     desc = "策略：KDJ出现金叉，MACD转强"
     if debug: print("[debug] buy_strategy_kdj", r)
     # cond_macd_pos = r["DIF"] >= 0
-    return r["recent_kdj_gold"] == "golden_cross" and r["macd_rising"] and r["close"] > r["open"], desc
+    return (
+        r["recent_kdj_gold"] == "golden_cross"
+        and r["macd_rising"]
+        and r["ma20_rising"]
+        and r["close"] > r["open"]
+        and r["trend_up_60"]  # ✅ 新增趋势过滤
+    ), desc
 
 
 # ==========================
