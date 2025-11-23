@@ -19,6 +19,7 @@ now = datetime.now()
 date_str = now.strftime("%Y-%m-%d")
 
 output_file = f"data/{date_str}_market.txt"
+output_code_file = f"data/above_200e.code"
 
 if os.path.exists(output_file):
     print(f"✅ 文件已存在，直接使用：{output_file}")
@@ -97,6 +98,7 @@ def fetch_page(page, retries=6):
 # 主流程
 # -----------------------
 all_stocks = []
+all_codes = []
 for page in range(1, 11):
     print(f"📄 正在拉取第 {page} 页...")
     rows = fetch_page(page)
@@ -118,6 +120,7 @@ for page in range(1, 11):
         market_value = item.get("f20")
         if code and name and market_value:
             all_stocks.append(f"{code}\t{name}\t{market_value}")
+            all_codes.append(f"{code}")
     time.sleep(5)
 
 # -----------------------
@@ -125,5 +128,7 @@ for page in range(1, 11):
 # -----------------------
 with open(output_file, "w", encoding="utf-8") as f:
     f.write("\n".join(all_stocks))
+with open(output_code_file, "w", encoding="utf-8") as f:
+    f.write("\n".join(all_codes))
 
 print(f"✅ 共获取 {len(all_stocks)} 条股票记录，已写入 {output_file}")
