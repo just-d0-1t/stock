@@ -23,6 +23,7 @@ import strategy.strategy_hub.fish_tub as fish_tub
 import strategy.strategy_hub.kdj as kdj
 import strategy.strategy_hub.kdj_ready as kdj_ready
 import strategy.strategy_hub.volumn_detect as volumn_detect
+import strategy.strategy_hub.volumn_break as volumn_break
 import strategy.strategy_hub.low_volumn_pullback as low_volumn_pullback
 
 mapping = {
@@ -30,6 +31,7 @@ mapping = {
     "kdj_ready": kdj_ready,
     "fish_tub": fish_tub,
     "volumn_detect": volumn_detect,
+    "volumn_break": volumn_break,
     "low_volumn_pullback": low_volumn_pullback,
 }
 
@@ -179,7 +181,8 @@ class Predictor:
                 close = r["close"]
                 market = round(stock['market_cap'] / 10000 / 10000, 2)
                 amount = round(stock['amount'] / 10000 / 10000, 2)
-                res = f"推荐买入股票 {stock['stock_name']}, 代码 {stock['stock_code']}, 日期 {r['trade_time']}, 最新股价 {close}, 市值 {market} 亿, 昨日成交额 {amount} 亿\n{desc}\n"
+                rise = round((close - r["open"]) * 100 / r["open"], 2)
+                res = f"推荐买入股票 {stock['stock_name']}, 代码 {stock['stock_code']}, 日期 {r['trade_time']}, 最新股价 {close}, 市值 {market} 亿, 昨日成交额 {amount} 亿, 当日涨幅 {rise}% \n{desc}\n"
                 self.log(res)
                 return True, res
 
