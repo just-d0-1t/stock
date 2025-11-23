@@ -19,7 +19,7 @@ now = datetime.now()
 date_str = now.strftime("%Y-%m-%d")
 
 output_file = f"data/{date_str}_zf5.txt"
-output_code_file = f"data/zf5_top500.txt"
+output_code_file = f"data/zf5_top500.code"
 
 if os.path.exists(output_file):
     print(f"✅ 文件已存在，直接使用：{output_file}")
@@ -30,7 +30,7 @@ if os.path.exists(output_file):
 # -----------------------
 BASE_URL = (
     "http://push2.eastmoney.com/api/qt/clist/get"
-    "?fid=f109&po=1&pz=100&pn=1&np=1&fltt=2&invt=2"
+    "?fid=f109&po=1&pz=100&np=1&fltt=2&invt=2"
     "&ut=8dec03ba335b81bf4ebdf7b29ec27d15"
     "&fs=m%3A0%2Bt%3A6%2Bf%3A!2%2C"
     "m%3A0%2Bt%3A13%2Bf%3A!2%2C"
