@@ -61,5 +61,5 @@ def buy(r, status, debug=False):
 
 def sell(r, status, debug=False):
     desc = "策略：跌破ma20 卖出"
-    if debug: print("[debug] sell_strategy_1", r["trade_time"], r["close"], r["ma20"])
+    if debug: print("[debug] sell_strategy_1", r["trade_date"], r["close"], r["ma20"])
     return r["close"] < r["ma20"], desc

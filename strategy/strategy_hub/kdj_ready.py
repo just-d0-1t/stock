@@ -78,7 +78,7 @@ def buy(r, status, debug=False):
 # 卖出策略
 # ==========================
 def sell(r, status, debug=False):
-    if debug: print("[debug] sell_strategy_4", status["days"], r["trade_time"])
+    if debug: print("[debug] sell_strategy_4", status["days"], r["trade_date"])
     if r["close"] < r["ma5"]:
         return True, "跌破ma5"
     if ((r["open"] - r["close"]) / r["open"]) > 0.03:

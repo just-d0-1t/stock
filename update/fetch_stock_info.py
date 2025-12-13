@@ -43,7 +43,7 @@ def fetch_stock(code, stock_info, idx, total, delay=1):
         df_combined = pd.concat([stock_info_df.reset_index(drop=True), df_shares.reset_index(drop=True)], axis=1)
 
         # 保存
-        path = config.default_info_path(code)
+        path = config.default_info_path(code, "1")
         save_data(df_combined, path)
         return f"✅ {code} 成功"
     except Exception as e:

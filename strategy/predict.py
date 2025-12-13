@@ -93,7 +93,7 @@ class Predictor:
                     status["fund"] -= capital
                     status["fund"] -= min(capital * 0.00026, 5)
                     status["buy"] = r["close"]
-                    operation["trade_time"] = r["trade_time"]
+                    operation["trade_date"] = r["trade_date"]
                     operation["hand"] = status["hand"]
                     operation["price"] = r["close"]
                     operation["capital"] = capital
@@ -119,7 +119,7 @@ class Predictor:
                     else:
                         status["lose"] += 1
                     operation["operator"] = "卖出"
-                    operation["trade_time"] = r["trade_time"]
+                    operation["trade_date"] = r["trade_date"]
                     operation["hand"] = status["hand"]
                     operation["price"] = r["close"]
                     operation["capital"] = 0
@@ -152,7 +152,7 @@ class Predictor:
             for op in status["operations"]:
                 op_str = (
                     f"操作 {op['operator']}\n"
-                    f"日期 {op['trade_time']}\n"
+                    f"日期 {op['trade_date']}\n"
                     f"股份 {op['hand']} 手\n"
                     f"股价 {op['price']}\n"
                     f"涨跌 {op['rate']:.2f}%\n"
@@ -182,7 +182,7 @@ class Predictor:
                 market = round(stock['market_cap'] / 10000 / 10000, 2)
                 amount = round(stock['amount'] / 10000 / 10000, 2)
                 rise = round((close - r["open"]) * 100 / r["open"], 2)
-                res = f"推荐买入股票 {stock['stock_name']}, 代码 {stock['stock_code']}, 日期 {r['trade_time']}, 最新股价 {close}, 市值 {market} 亿, 昨日成交额 {amount} 亿, 当日涨幅 {rise}% \n{desc}\n"
+                res = f"推荐买入股票 {stock['name']}, 代码 {stock['code']}, 日期 {r['trade_date']}, 最新股价 {close}, 市值 {market} 亿, 昨日成交额 {amount} 亿, 当日涨幅 {rise}% \n{desc}\n"
                 self.log(res)
                 return True, res
 

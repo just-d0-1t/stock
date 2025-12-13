@@ -17,19 +17,19 @@ import mplfinance as mpf
 from update.fetch_stock_data import StockAnalyzer  # 你之前实现的类
 
 
-def update(stock_code, start_date, end_date=None, data_path=None, ktype=1):
+def update(code, start_date, end_date=None, data_path=None, ktype=1):
     today = datetime.today().date()
 #    today = datetime.strptime("2025-09-05", "%Y-%m-%d").date()
 
     if data_path is None:
-        data_path = config.default_data_path(stock_code, ktype)
+        data_path = config.default_data_path(code, ktype)
 
     if not os.path.exists(data_path):
-        # 历史文件不存在 → 默认取两年数据
+        # 历史文件不存在 → 默认取五年数据
         print(data_path)
         if start_date is None:
-            start_date = (today - timedelta(days=730)).strftime("%Y-%m-%d")
-        analyzer = StockAnalyzer(stock_code, start_date, end_date, data_path, ktype)
+            start_date = (today - timedelta(days=1825)).strftime("%Y-%m-%d")
+        analyzer = StockAnalyzer(code, start_date, end_date, data_path, ktype)
         df = analyzer.run()
 
     else:
@@ -37,20 +37,14 @@ def update(stock_code, start_date, end_date=None, data_path=None, ktype=1):
         history = pd.read_csv(
             data_path,
             parse_dates=["trade_date"],
-            dtype={"stock_code": str}  # ⭐ 保证股票代码是字符串
         )
         history.sort_values("trade_date", inplace=True)
         last_date = history["trade_date"].iloc[-1].date()
 
         days = 0
-        # 周线更新近7天数据
-        if ktype == 2:
-            days = 7
-        if ktype == 3:
-            days = 31
         if start_date is None:
             start_date = (last_date - timedelta(days=days)).strftime("%Y-%m-%d")
-        analyzer = StockAnalyzer(stock_code, start_date, end_date, data_path, ktype)
+        analyzer = StockAnalyzer(code, start_date, end_date, data_path, ktype)
         df = analyzer.run()
 
     return df
@@ -73,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument('-k', '--ktype',
                         type=int,
                         default=1,
-                        help='k线类型')
+                        help='代码类型 1:股票 3:ETF基金')
 
     # 解析参数
     args = parser.parse_args()

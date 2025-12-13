@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import adata
+import akshare as ak
 from datetime import datetime
 import numpy as np
 
@@ -80,30 +81,43 @@ def compute_macd(df, short=12, long=26, signal=9):
 
 
 class StockAnalyzer:
-    def __init__(self, stock_code: str, start_date: str, end_date: str = None, data_path: str = None, ktype: int=1):
+    def __init__(self, code: str, start_date: str, end_date: str = None, data_path: str = None, ktype: int=1):
         """
-        :param stock_code: 股票代码，例如 '002747'
+        :param code: 股票代码，例如 '002747'
         :param start_date: 起始日期，例如 '2025-08-01'
         :param data_path: 股票数据存放路径（CSV 文件），若未指定则默认生成
         :param ktype: 1.日；2.周；3.月
         """
-        self.stock_code = stock_code
+        self.code = code
         self.start_date = start_date
         self.end_date = end_date
         self.ktype = ktype
         if data_path:
             self.data_path = data_path
         else:
-            self.data_path = config.default_data_path(self.stock_code, self.ktype)
+            self.data_path = config.default_data_path(self.code, self.ktype)
 
-    def fetch_market_data(self, ktype=1):
+    def fetch_market_data(self):
         """获取交易数据"""
-        res_df = adata.stock.market.get_market(
-            stock_code=self.stock_code,
-            k_type=self.ktype,
-            start_date=self.start_date,
-            end_date=self.end_date,
-        )
+        """股票类型"""
+        if self.ktype == "1" or self.ktype == 1:
+            res_df = adata.stock.market.get_market(
+                stock_code=self.code,
+                start_date=self.start_date,
+                end_date=self.end_date,
+            )
+        """ETF基金类型"""
+        if self.ktype == "2" or self.ktype == 2:
+            start_date = self.start_date.replace('-', '') if self.start_date else '19900101'
+            today = datetime.today().strftime('%Y%m%d')
+            end_date = self.end_date.replace('-', '') if self.end_date else today
+            # akshare 的实际接口可能需要调整
+            print(start_date, end_date)
+            res_df = ak.fund_etf_hist_em(
+                symbol=self.code,
+                start_date=start_date,
+                end_date=end_date,
+            )
         return res_df
 
     def load_history(self):
@@ -116,7 +130,6 @@ class StockAnalyzer:
             return pd.read_csv(
                 self.data_path,
                 parse_dates=["trade_date"],
-                dtype={"stock_code": str}  # ⭐ 保证股票代码是字符串
             )
         return pd.DataFrame()
 
@@ -168,10 +181,8 @@ class StockAnalyzer:
         # ===== 统一日期和股票代码类型 =====
         if not df.empty:
             df["trade_date"] = pd.to_datetime(df["trade_date"])
-            df["stock_code"] = df["stock_code"].astype(str)
         if not history_df.empty:
             history_df["trade_date"] = pd.to_datetime(history_df["trade_date"])
-            history_df["stock_code"] = history_df["stock_code"].astype(str)
     
         # ===== 合并历史与新数据（去重） =====
         all_df = pd.concat([history_df, df]).drop_duplicates(
@@ -209,17 +220,15 @@ class StockAnalyzer:
     
     def save_data(self, df: pd.DataFrame):
         """以追加方式写入 CSV，并保持股票代码为字符串"""
-        # 确保 stock_code 列为字符串
-        df["stock_code"] = df["stock_code"].astype(str)
         # 写入 CSV
         df.to_csv(self.data_path, index=False, mode="w", encoding="utf-8-sig")
 
     def run(self):
         """执行完整流程"""
-        print(f"获取股票 {self.stock_code} 自 {self.start_date} 起的数据...")
+        print(f"获取股票 {self.code} 自 {self.start_date} 起的数据...")
         new_data = self.fetch_market_data()
         if new_data.empty:
-            print(f"⚠️ 股票 {self.stock_code} new_data 是空的 DataFrame")
+            print(f"⚠️ 股票 {self.code} new_data 是空的 DataFrame")
             return new_data
         history_data = self.load_history()
 

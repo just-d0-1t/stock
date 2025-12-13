@@ -98,21 +98,28 @@ def buy(r, status, debug=False):
     return (
         r["recent_kdj_gold"] == "golden_cross"
         and r["macd_rising"]
-        and r["ma20_rising"]
+    #    and r["ma20_rising"]
         and r["close"] > r["open"]
-        and r["trend_up_60"]  # ✅ 新增趋势过滤
+    #    and r["trend_up_60"]  # ✅ 新增趋势过滤
     ), desc
 
 
 # ==========================
 # 卖出策略
 # ==========================
+def ma20(r, status, desc, debug=False):
+    # if r["ma20_rising"] and r["close"] > r["ma20"]:
+    #     return False, ""
+    return True, desc
+
 def sell(r, status, debug=False):
-    if debug: print("[debug] sell_strategy_4", status["days"], r["trade_time"])
+    if debug: print("[debug] sell_strategy_4", status["days"], r["trade_date"])
     if r["close"] < r["ma5"]:
-        return True, "跌破ma5"
+    #     return True, "跌破ma5"
+        return ma20(r, status, "跌破ma5", debug)
     if ((r["open"] - r["close"]) / r["open"]) > 0.03:
         return True, "单日跌超3%"
-    if len(status["record"]) == 2 and status["record"][1]["close"] < status["record"][1]["open"]:
-        return True, "买入第二日即下跌"
+    #     return ma20(r, status, "单日跌超3%", debug)
+    # if len(status["record"]) == 2 and status["record"][1]["close"] < status["record"][1]["open"]:
+    #     return True, "买入第二日即下跌"
     return False, ""
