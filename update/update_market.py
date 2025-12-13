@@ -14,7 +14,7 @@ import utils.config as config
 import pandas as pd
 from datetime import datetime, timedelta
 import mplfinance as mpf
-from update.fetch_stock_data import StockAnalyzer  # 你之前实现的类
+from update.fetch_market import MarketAnalyzer  # 你之前实现的类
 
 
 def update(code, start_date, end_date=None, data_path=None, ktype=1):
@@ -29,7 +29,7 @@ def update(code, start_date, end_date=None, data_path=None, ktype=1):
         print(data_path)
         if start_date is None:
             start_date = (today - timedelta(days=1825)).strftime("%Y-%m-%d")
-        analyzer = StockAnalyzer(code, start_date, end_date, data_path, ktype)
+        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype)
         df = analyzer.run()
 
     else:
@@ -44,7 +44,7 @@ def update(code, start_date, end_date=None, data_path=None, ktype=1):
         days = 0
         if start_date is None:
             start_date = (last_date - timedelta(days=days)).strftime("%Y-%m-%d")
-        analyzer = StockAnalyzer(code, start_date, end_date, data_path, ktype)
+        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype)
         df = analyzer.run()
 
     return df

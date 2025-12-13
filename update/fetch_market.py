@@ -80,7 +80,7 @@ def compute_macd(df, short=12, long=26, signal=9):
     return df
 
 
-class StockAnalyzer:
+class MarketAnalyzer:
     def __init__(self, code: str, start_date: str, end_date: str = None, data_path: str = None, ktype: int=1):
         """
         :param code: 股票代码，例如 '002747'

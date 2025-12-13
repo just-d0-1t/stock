@@ -10,7 +10,7 @@
 
 import adata
 from update.plot_stock import plot
-from update.update_stock import update
+from update.update_market import update
 import time
 import os
 import argparse
