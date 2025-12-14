@@ -9,7 +9,6 @@
 """
 
 import adata
-from update.plot_stock import plot
 from update.update_market import update
 import time
 import os
@@ -30,26 +29,21 @@ def get_codes_from_file(path):
         return [line.strip() for line in f if line.strip()]
 
 
-def process_code(code, idx, total, ktype, update_only, delay):
+def process_code(code, idx, total, ktype, delay):
     """单只股票处理逻辑"""
     try:
-        if update_only:
-            time.sleep(delay)
+        time.sleep(delay)
         print(f"\n[{idx}/{total}] 正在处理股票: {code}")
         df = update(code, None, None, None, ktype)
         if df.empty:
             time.sleep(delay)
             raise ValueError("更新失败")
-        if not update_only:
-            plot(code, ktype, 90)
-            plot(code, ktype, 365)
-            plot(code, ktype, 730)
         return f"✅ {code} 成功"
     except Exception as e:
         return f"⚠️ 股票 {code} 处理失败: {e}"
 
 
-def update_codes(fetch, ktype, path, update_only, delay, workers):
+def update_codes(fetch, ktype, path, delay, workers):
     if fetch == 'remote':
         print("获取所有A股股票代码...")
         stock_codes = get_codes_from_remote()
@@ -66,7 +60,7 @@ def update_codes(fetch, ktype, path, update_only, delay, workers):
     results = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
         future_to_code = {
-            executor.submit(process_code, code, idx, len(stock_codes), ktype, update_only, delay): code
+            executor.submit(process_code, code, idx, len(stock_codes), ktype, delay): code
             for idx, code in enumerate(stock_codes, start=1)
         }
         for future in as_completed(future_to_code):
@@ -86,11 +80,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='并发更新所有股票数据')
     parser.add_argument('-f', '--fetch', required=True, help='指定数据源，local|remote|file')
     parser.add_argument('-p', '--path', help='指定数据文件')
-    parser.add_argument('-k', '--ktype', type=int, default=1, help='k线类型')
+    parser.add_argument('-k', '--ktype', type=int, default=1, help='数据类型')
     parser.add_argument('-d', '--delay', type=float, default=0.75, help='请求间延迟（秒）')
-    parser.add_argument('-u', '--update', action='store_true', help='仅更新数据，不生成图表')
     parser.add_argument('-w', '--workers', type=int, default=5, help='并发线程数')
     args = parser.parse_args()
 
-    update_codes(args.fetch, args.ktype, args.path, args.update, args.delay, args.workers)
+    update_codes(args.fetch, args.ktype, args.path, args.delay, args.workers)
 

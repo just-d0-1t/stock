@@ -100,6 +100,7 @@ class MarketAnalyzer:
     def fetch_market_data(self):
         """获取交易数据"""
         """股票类型"""
+        res_df = pd.DataFrame()
         if self.ktype == "1" or self.ktype == 1:
             res_df = adata.stock.market.get_market(
                 stock_code=self.code,
@@ -117,6 +118,7 @@ class MarketAnalyzer:
                 symbol=self.code,
                 start_date=start_date,
                 end_date=end_date,
+                adjust="qfq",
             )
         return res_df
 
