@@ -163,8 +163,9 @@ class Predictor:
                 self.log(op_str)
             capital = status["operations"][-1]["capital"] if status["operations"] else 0
             summary = (
-                f"============================\n"
-                f"股票代码: {code}\n"
+                f"========= summary ===========\n"
+                f"代码: {code}\n"
+                f"名称: {stock['name']}\n"
                 f"量化策略: {self.strategy_module.__name__}\n"
                 f"数据路径: {path}\n"
                 f"涨跌: {(status['fund'] + capital - status['base']) * 100.0 / status['base']:.2f}%\n"

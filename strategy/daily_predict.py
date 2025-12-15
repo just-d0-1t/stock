@@ -13,6 +13,7 @@ from strategy.predict import Predictor  # 引入你的类版本predict
 # -------------------------
 MODELS = [
     "kdj",
+    "fish_tub",
     "volumn_detect",
     # 可以继续添加其他模型
 ]
@@ -85,11 +86,7 @@ if __name__ == "__main__":
     threads = []
     cond=None
     for model in MODELS:
-        code = "all"
-        cond = None
-        if model == "kdj":
-            code = "file,data/above_200e.code" 
-            cond = "amount=300000000,market=12000000000"
+        code = "file,data/etf.code" 
         if model == "volumn_detect":
             code = "file,data/zf5_top500.code" 
         t = threading.Thread(target=run_predict, args=(model, cond, code))
