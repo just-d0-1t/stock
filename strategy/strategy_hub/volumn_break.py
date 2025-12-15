@@ -129,6 +129,6 @@ def buy(r, status, debug=False):
 # ==========================
 def sell(r, status, debug=False):
     if debug: print("[debug] ", r)
-    if len(status["record"]) == 2:
-        return True, "持有股票第2天卖出"
+    if len(status["record"]) == 3:
+        return True, "持有股票第3天卖出"
     return False, ""
