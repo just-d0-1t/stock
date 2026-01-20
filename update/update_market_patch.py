@@ -78,7 +78,7 @@ def update_codes(fetch, ktype, path, delay, workers):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='并发更新所有股票数据')
-    parser.add_argument('-f', '--fetch', required=True, help='指定数据源，local|remote|file')
+    parser.add_argument('-f', '--fetch', required=True, help='指定股票代码，local|remote|file')
     parser.add_argument('-p', '--path', help='指定数据文件')
     parser.add_argument('-k', '--ktype', type=int, default=1, help='数据类型')
     parser.add_argument('-d', '--delay', type=float, default=0.75, help='请求间延迟（秒）')

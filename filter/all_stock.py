@@ -18,8 +18,7 @@ import os
 now = datetime.now()
 date_str = now.strftime("%Y-%m-%d")
 
-output_file = f"data/{date_str}_zf.txt"
-output_code_file = f"data/zf_top500.code"
+output_file = f"data/{date_str}_all_market.txt"
 
 if os.path.exists(output_file):
     print(f"✅ 文件已存在，直接使用：{output_file}")
@@ -29,26 +28,17 @@ if os.path.exists(output_file):
 # 请求配置
 # -----------------------
 BASE_URL = (
-#    "http://push2.eastmoney.com/api/qt/clist/get"
-#    "?fid=f3&po=1&pz=100&np=1&fltt=2&invt=2"
-#    "&ut=8dec03ba335b81bf4ebdf7b29ec27d15"
-#    "&fs=m%3A0%2Bt%3A6%2Bf%3A!2%2C"
-#    "m%3A0%2Bt%3A13%2Bf%3A!2%2C"
-#    "m%3A0%2Bt%3A80%2Bf%3A!2%2C"
-#    "m%3A1%2Bt%3A2%2Bf%3A!2%2C"
-#    "m%3A1%2Bt%3A23%2Bf%3A!2%2C"
-#    "m%3A0%2Bt%3A7%2Bf%3A!2%2C"
-#    "m%3A1%2Bt%3A3%2Bf%3A!2"
-#    "&fields=f12%2Cf14%2Cf3"
     "http://push2.eastmoney.com/api/qt/clist/get"
-    "?fid=f3&po=1&pz=100&np=1&fltt=1&invt=2"
-    "&ut=fa5fd1943c7b386f172d6893dbfba10b"
+    "?np=1&fltt=1&invt=2"
     "&fs=m%3A0%2Bt%3A6%2Bf%3A!2%2C"
     "m%3A0%2Bt%3A80%2Bf%3A!2%2C"
     "m%3A1%2Bt%3A2%2Bf%3A!2%2C"
     "m%3A1%2Bt%3A23%2Bf%3A!2%2C"
     "m%3A0%2Bt%3A81%2Bs%3A262144%2Bf%3A!2"
-    "&fields=f12%2Cf14%2Cf3"
+    "&fields=f12%2Cf13%2Cf14%2Cf1%2Cf2%2Cf4%2Cf3%2Cf152%2Cf5%2Cf6%2Cf7%2Cf15%2Cf18%2Cf16%2Cf17%2Cf10%2Cf8%2Cf9%2Cf23%2Cf20"
+    "&fid=f20&pz=100&po=1&dect=1"
+    "&ut=fa5fd1943c7b386f172d6893dbfba10b"
+    "&wbp2u=%7C0%7C1%7C0%7Cweb"
 )
 HEADERS = {
     "User-Agent": (
@@ -108,31 +98,36 @@ def fetch_page(page, retries=6):
 # -----------------------
 all_stocks = []
 all_codes = []
-for page in range(1, 4):
+for page in range(1,56):
     print(f"📄 正在拉取第 {page} 页...")
     rows = fetch_page(page)
-    for item in rows:
-        code = item.get("f12")
-        name = item.get("f14")
-        # 排除ST股
-        if "ST" in name:
-            continue
-        try:
-            zf = item.get("f3")
-            zf = int(zf)
-            if code and name and zf >= 700 and zf <= 1000:
-                all_stocks.append(f"{code}\t{name}\t{zf}")
-                all_codes.append(f"{code}")
-        except Exception as e:
-            print("fail to get zf")
+    with open(output_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(rows))
+        f.write("\n")
+#         price = item.get("f17")
+#         try:
+#             price_int = int(price)
+#             if price_int > 6000:
+#                 continue
+#         except Exception as e:
+#             print(f"price {price} convert error")
+# 
+#         exclude_prefixes = ("300", "688", "8")  # 定义要排除的板块前缀
+#         code = item.get("f12")
+#         if code.startswith(exclude_prefixes):
+#             continue
+# 
+#         name = item.get("f14")
+#         market_value = item.get("f20")
+#         if code and name and market_value:
+#             all_stocks.append(f"{code}\t{name}\t{market_value}")
+#             all_codes.append(f"{code}")
     time.sleep(5)
 
 # -----------------------
 # 写入文件
 # -----------------------
-with open(output_file, "w", encoding="utf-8") as f:
-    f.write("\n".join(all_stocks))
-with open(output_code_file, "w", encoding="utf-8") as f:
-    f.write("\n".join(all_codes))
+# with open(output_code_file, "w", encoding="utf-8") as f:
+#     f.write("\n".join(all_codes))
 
 print(f"✅ 共获取 {len(all_stocks)} 条股票记录，已写入 {output_file}")

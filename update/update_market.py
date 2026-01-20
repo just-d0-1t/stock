@@ -44,7 +44,7 @@ def update(code, start_date, end_date=None, data_path=None, ktype=1):
         days = 0
         if start_date is None:
             start_date = (last_date - timedelta(days=days)).strftime("%Y-%m-%d")
-        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype)
+        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype, "local")
         df = analyzer.run()
 
     return df

@@ -3,7 +3,9 @@ import pandas as pd
 import adata
 import akshare as ak
 from datetime import datetime
+import threading
 import numpy as np
+import update.fetch_market_local as fl
 
 def compute_kdj(df, n=9, k_smooth=3, d_smooth=3):
     """
@@ -81,7 +83,10 @@ def compute_macd(df, short=12, long=26, signal=9):
 
 
 class MarketAnalyzer:
-    def __init__(self, code: str, start_date: str, end_date: str = None, data_path: str = None, ktype: int=1):
+    _cache = {}  # 类级别的缓存：{file_path: parsed_dict}
+    _cache_lock = threading.Lock()  # 类级别的锁（所有实例共享）
+
+    def __init__(self, code: str, start_date: str, end_date: str = None, data_path: str = None, ktype: int=1, fetch_from: str = "remote"):
         """
         :param code: 股票代码，例如 '002747'
         :param start_date: 起始日期，例如 '2025-08-01'
@@ -92,6 +97,7 @@ class MarketAnalyzer:
         self.start_date = start_date
         self.end_date = end_date
         self.ktype = ktype
+        self.fetch_from = fetch_from
         if data_path:
             self.data_path = data_path
         else:
@@ -121,6 +127,27 @@ class MarketAnalyzer:
                 adjust="qfq",
             )
         return res_df
+
+
+    def fetch_market_data_from_local(self):
+        file_path = "/root/stock/data/2026-01-20_all_market.txt"
+
+        # 先快速检查缓存（无锁，提高命中时的性能）
+        if file_path in self._cache:
+            res = self._cache[file_path]
+            return res.get(self.code, pd.DataFrame())
+
+        # 缓存未命中 → 获取锁，防止多个线程重复加载
+        with self._cache_lock:
+            # 再次检查（double-check pattern）：可能在等待锁时已被其他线程加载
+            if file_path in self._cache:
+                res = self._cache[file_path]
+            else:
+                print("load stock_data")
+                res = fl.load_stock_data(file_path)
+                self._cache[file_path] = res
+
+        return res.get(self.code, pd.DataFrame())
 
     def load_history(self):
         # """读取历史数据（如存在）"""
@@ -206,18 +233,6 @@ class MarketAnalyzer:
         # ===== 计算 macd =====
         compute_macd(all_df)
     
-        # ===== 计算量比（过去5日平均） =====
-        vr_list = []
-        for i in range(len(all_df)):
-            today_vol = all_df.loc[i, "volume"]
-            past_vols = all_df.loc[max(0, i-5):i-1, "volume"]
-            if len(past_vols) > 0:
-                avg_vol = past_vols.mean()
-                vr_list.append(today_vol / avg_vol if avg_vol > 0 else 0)
-            else:
-                vr_list.append(0)
-        all_df["volume_ratio"] = vr_list
-    
         return all_df
     
     def save_data(self, df: pd.DataFrame):
@@ -228,7 +243,11 @@ class MarketAnalyzer:
     def run(self):
         """执行完整流程"""
         print(f"获取股票 {self.code} 自 {self.start_date} 起的数据...")
-        new_data = self.fetch_market_data()
+        if self.fetch_from == "remote":
+            new_data = self.fetch_market_data()
+        else:
+            new_data = self.fetch_market_data_from_local()
+
         if new_data.empty:
             print(f"⚠️ 股票 {self.code} new_data 是空的 DataFrame")
             return new_data
