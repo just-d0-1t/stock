@@ -51,13 +51,8 @@ def pretreatment(stock, operate, tuning, debug):
                 records.loc[idx, "recent_kdj_gold"] = "golden_cross"
             else:
                 records.loc[idx, "recent_kdj_gold"] = "no_cross"
-
-            macd_recent = records["MACD"].iloc[idx - period + 1: idx + 1].values
-            if not np.isnan(macd_recent).any():
-                records.loc[idx, "macd_rising"] = is_rising(macd_recent)
         else:
             records.loc[idx, "recent_kdj_gold"] = "no_cross"
-            records.loc[idx, "macd_rising"] = False
 
         # ===================
         # 60日趋势判断
@@ -92,12 +87,10 @@ def pretreatment(stock, operate, tuning, debug):
 # 卖出策略
 # ==========================
 def buy(r, status, debug=False):
-    desc = "策略：KDJ出现金叉，MACD转强"
+    desc = "策略：KDJ出现金叉"
     if debug: print("[debug] buy_strategy_kdj", r)
-    # cond_macd_pos = r["DIF"] >= 0
     return (
         r["recent_kdj_gold"] == "golden_cross"
-        and r["macd_rising"]
     #    and r["ma20_rising"]
         and r["close"] > r["open"]
     #    and r["trend_up_60"]  # ✅ 新增趋势过滤

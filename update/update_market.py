@@ -17,7 +17,7 @@ import mplfinance as mpf
 from update.fetch_market import MarketAnalyzer  # 你之前实现的类
 
 
-def update(code, start_date, end_date=None, data_path=None, ktype=1):
+def update(code, start_date, end_date=None, data_path=None, ktype=1, fetch_from="local"):
     today = datetime.today().date()
 #    today = datetime.strptime("2025-09-05", "%Y-%m-%d").date()
 
@@ -29,7 +29,9 @@ def update(code, start_date, end_date=None, data_path=None, ktype=1):
         print(data_path)
         if start_date is None:
             start_date = (today - timedelta(days=1825)).strftime("%Y-%m-%d")
-        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype)
+        # 之前没有历史数据，需要从远程获取
+        fetch_from = "remote"
+        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype, fetch_from)
         df = analyzer.run()
 
     else:
@@ -44,7 +46,7 @@ def update(code, start_date, end_date=None, data_path=None, ktype=1):
         days = 0
         if start_date is None:
             start_date = (last_date - timedelta(days=days)).strftime("%Y-%m-%d")
-        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype, "local")
+        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype, fetch_from)
         df = analyzer.run()
 
     return df
@@ -68,6 +70,8 @@ if __name__ == "__main__":
                         type=int,
                         default=1,
                         help='代码类型 1:股票 3:ETF基金')
+    parser.add_argument('-f', '--fetch_from',
+                        help='数据源，remote|local')
 
     # 解析参数
     args = parser.parse_args()
@@ -76,4 +80,5 @@ if __name__ == "__main__":
     end_date = args.end_date
     path = args.path
     ktype = args.ktype
+    fetch_from = args.fetch_from
     update(code, start_date, end_date, path, ktype)

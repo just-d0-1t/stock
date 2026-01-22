@@ -18,11 +18,20 @@ import os
 now = datetime.now()
 date_str = now.strftime("%Y-%m-%d")
 
-output_file = f"data/{date_str}_all_market.txt"
+output_file = f"/root/stock/data/{date_str}_all_market.txt"
 
 if os.path.exists(output_file):
-    print(f"✅ 文件已存在，直接使用：{output_file}")
-    exit(0)
+    new_timestr = datetime.now().strftime("%Y-%m-%d_%H:%M")  # 注意：Windows 文件名不支持冒号 ":"
+    new_file = f"/root/stock/data/{new_timestr}_all_market.txt"
+    
+    # 重命名文件
+    try:
+        os.rename(output_file, new_file)
+        print(f"文件已重命名为: {new_file}")
+    except FileNotFoundError:
+        print(f"错误：源文件 '{output_file}' 不存在")
+    except OSError as e:
+        print(f"重命名失败: {e}")
 
 # -----------------------
 # 请求配置
@@ -103,26 +112,7 @@ for page in range(1,56):
     rows = fetch_page(page)
     with open(output_file, "a", encoding="utf-8") as f:
         f.write(json.dumps(rows))
-        f.write("\n")
-#         price = item.get("f17")
-#         try:
-#             price_int = int(price)
-#             if price_int > 6000:
-#                 continue
-#         except Exception as e:
-#             print(f"price {price} convert error")
-# 
-#         exclude_prefixes = ("300", "688", "8")  # 定义要排除的板块前缀
-#         code = item.get("f12")
-#         if code.startswith(exclude_prefixes):
-#             continue
-# 
-#         name = item.get("f14")
-#         market_value = item.get("f20")
-#         if code and name and market_value:
-#             all_stocks.append(f"{code}\t{name}\t{market_value}")
-#             all_codes.append(f"{code}")
-    time.sleep(5)
+    time.sleep(1)
 
 # -----------------------
 # 写入文件

@@ -2,84 +2,66 @@ import os
 import pandas as pd
 import adata
 import akshare as ak
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import numpy as np
 import update.fetch_market_local as fl
 
-def compute_kdj(df, n=9, k_smooth=3, d_smooth=3):
+
+def compute_kdj(all_df, new_start_idx, n=9, k_smooth=3, d_smooth=3):
     """
-    计算KDJ指标，并标注金叉和死叉
-    df: DataFrame，必须包含 high, low, close
-    n: RSV周期，常用9
-    k_smooth: K平滑周期，常用3
-    d_smooth: D平滑周期，常用3
+    增量计算 KDJ，确保结果与全量计算一致
+    :param all_df: 完整 DataFrame（已排序去重）
+    :param new_start_idx: 需要更新指标的起始索引（含重叠部分）
+    :param n: RSV 周期
     """
-    # 1. 计算RSV
-    low_min = df['low'].rolling(n, min_periods=1).min()
-    high_max = df['high'].rolling(n, min_periods=1).max()
-    df['rsv'] = (df['close'] - low_min) / (high_max - low_min) * 100
+    if new_start_idx >= len(all_df):
+        return
 
-    # 2. 计算K、D
-    df['K'] = df['rsv'].ewm(alpha=1/k_smooth, adjust=False).mean()
-    df['D'] = df['K'].ewm(alpha=1/d_smooth, adjust=False).mean()
+    # === 1. 确定计算窗口 ===
+    # 预热窗口长度：经验值 3*n（可调整）
+    warmup = max(n * 3, 50)  # 至少 50 行保证 EWM 收敛
+    calc_start = max(0, new_start_idx - warmup)
+    
+    # 提取计算子集
+    calc_df = all_df.iloc[calc_start:].copy()
 
-    # 3. 计算J
-    df['J'] = 3 * df['K'] - 2 * df['D']
+    # === 2. 全量计算 KDJ（在子集上）===
+    low_min = calc_df['low'].rolling(window=n, min_periods=1).min()
+    high_max = calc_df['high'].rolling(window=n, min_periods=1).max()
+    rsv = (calc_df['close'] - low_min) / (high_max - low_min) * 100
+    calc_df['rsv'] = rsv.fillna(0)  # 处理除零或 NaN
 
-    # 4. 标注金叉/死叉
-    df['kdj_signal'] = ''
-    for i in range(1, len(df)):
-        if df['K'].iloc[i-1] < df['D'].iloc[i-1] and df['K'].iloc[i] > df['D'].iloc[i]:
-            df.at[i, 'kdj_signal'] = 'golden_cross'  # 金叉
-        elif df['K'].iloc[i-1] > df['D'].iloc[i-1] and df['K'].iloc[i] < df['D'].iloc[i]:
-            df.at[i, 'kdj_signal'] = 'death_cross'   # 死叉
-        else:
-            df.at[i, 'kdj_signal'] = 'no_cross'   # 死叉
-            
+    # K 和 D 使用 EWM
+    calc_df['K'] = calc_df['rsv'].ewm(alpha=1/k_smooth, adjust=False).mean()
+    calc_df['D'] = calc_df['K'].ewm(alpha=1/d_smooth, adjust=False).mean()
+    calc_df['J'] = 3 * calc_df['K'] - 2 * calc_df['D']
 
-    df.drop(['rsv'], axis=1, inplace=True)
+    # === 3. 只将“需要更新的部分”写回 all_df ===
+    # 从 new_start_idx 开始的所有行都需要更新（包括重叠部分）
+    update_indices = all_df.index[new_start_idx:]
+    update_slice = calc_df.loc[update_indices]
 
-    return df
+    for col in ['K', 'D', 'J']:
+        all_df.loc[update_indices, col] = update_slice[col].values
 
+    # === 4. 更新信号（只更新 new_start_idx 之后）===
+    all_df.loc[:new_start_idx - 1, 'kdj_signal'] = all_df.get('kdj_signal', 'no_cross')[:new_start_idx]
+    all_df.loc[new_start_idx:, 'kdj_signal'] = 'no_cross'  # 初始化
 
-def compute_macd(df, short=12, long=26, signal=9):
-    """
-    计算MACD指标，并标注金叉和死叉
-    df: DataFrame，必须包含 close 列
-    short: 短期EMA周期，常用12
-    long: 长期EMA周期，常用26
-    signal: DEA平滑周期，常用9
-    """
-    # 1. 计算EMA
-    df['ema_short'] = df['close'].ewm(span=short, adjust=False).mean()
-    df['ema_long'] = df['close'].ewm(span=long, adjust=False).mean()
+    for i in range(new_start_idx, len(all_df)):
+        if i == 0:
+            continue
+        k_prev, d_prev = all_df.at[i-1, 'K'], all_df.at[i-1, 'D']
+        k_curr, d_curr = all_df.at[i, 'K'], all_df.at[i, 'D']
+        if k_prev < d_prev and k_curr > d_curr:
+            all_df.at[i, 'kdj_signal'] = 'golden_cross'
+        elif k_prev > d_prev and k_curr < d_curr:
+            all_df.at[i, 'kdj_signal'] = 'death_cross'
 
-    # 2. DIF
-    df['DIF'] = df['ema_short'] - df['ema_long']
-
-    # 3. DEA（信号线）
-    df['DEA'] = df['DIF'].ewm(span=signal, adjust=False).mean()
-
-    # 4. MACD（柱状图）
-    df['MACD'] = 2 * (df['DIF'] - df['DEA'])
-
-    # 5. 标注金叉/死叉
-    df['macd_signal'] = ''
-    for i in range(1, len(df)):
-        if df['DIF'].iloc[i-1] < df['DEA'].iloc[i-1] and df['DIF'].iloc[i] > df['DEA'].iloc[i]:
-            df.at[i, 'macd_signal'] = 'golden_cross'  # 金叉
-        elif df['DIF'].iloc[i-1] > df['DEA'].iloc[i-1] and df['DIF'].iloc[i] < df['DEA'].iloc[i]:
-            df.at[i, 'macd_signal'] = 'death_cross'   # 死叉
-        else:
-            df.at[i, 'macd_signal'] = 'no_cross'   # 死叉
-
-    if 'mach_signal' in df:
-        df.drop(['ema_long', 'ema_short', 'mach_signal'], axis=1, inplace=True)
-    else:
-        df.drop(['ema_long', 'ema_short'], axis=1, inplace=True)
-
-    return df
+    # 清理临时列
+    if 'rsv' in all_df.columns:
+        all_df.drop(columns=['rsv'], inplace=True)
 
 
 class MarketAnalyzer:
@@ -130,7 +112,9 @@ class MarketAnalyzer:
 
 
     def fetch_market_data_from_local(self):
-        file_path = "/root/stock/data/2026-01-20_all_market.txt"
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        file_path = f"/root/stock/data/{date_str}_all_market.txt"
 
         # 先快速检查缓存（无锁，提高命中时的性能）
         if file_path in self._cache:
@@ -162,11 +146,44 @@ class MarketAnalyzer:
             )
         return pd.DataFrame()
 
-    def ma(self, all_df, period):
-        # 偷个懒
+    def ma(self, all_df, period, new_start_idx):
+        """
+        增量计算 MA 指标
+        :param all_df: 完整 DataFrame（含历史+新数据）
+        :param period: MA 周期，如 5, 10, 20
+        :param new_start_idx: 新数据在 all_df 中的起始索引
+        """
         period = str(period)
         win = int(period)
-
+        col_ma = f"ma{period}"
+        col_above = f"above_ma{period}"
+        col_first_above = f"first_above_ma{period}"
+        col_first_under = f"first_under_ma{period}"
+    
+        # === 1. 计算 MA（只需从 new_start_idx - win + 1 开始算，但为安全取更早一点）
+        start_calc = max(0, new_start_idx - win)
+        subset = all_df.iloc[start_calc:].copy()
+        subset[col_ma] = subset["close"].rolling(window=win, min_periods=win).mean()
+    
+        # 将计算结果写回 all_df
+        all_df.loc[subset.index, col_ma] = subset[col_ma]
+    
+        # === 2. 计算 above_ma
+        mask = (all_df[col_ma] > 0) & (all_df["close"] > all_df[col_ma])
+        all_df[col_above] = np.where(mask, "y", "n")
+    
+        # === 3. 计算 first_above_ma 和 first_under_ma（只需从 new_start_idx 开始检查）
+        # 初始化为 "n"
+        all_df[col_first_above] = "n"
+        all_df[col_first_under] = "n"
+    
+        for i in range(new_start_idx, len(all_df)):
+            if all_df.at[i, col_above] == "y":
+                if i == 0 or all_df.at[i-1, col_above] == "n":
+                    all_df.at[i, col_first_above] = "y"
+            else:
+                if i > 0 and all_df.at[i-1, col_above] == "y":
+                    all_df.at[i, col_first_under] = "y"
         # ===== 计算 ma =====
         all_df["ma" + period] = all_df["close"].rolling(window=win, min_periods=win).mean().fillna(0)
 
@@ -205,33 +222,32 @@ class MarketAnalyzer:
         all_df["first_under_ma" + period] = first_under_flags
 
     def compute_indicators(self, df: pd.DataFrame, history_df: pd.DataFrame):
-        """计算指标：ma20, above_ma20, first_above_ma20, volume_ratio"""
-    
+        if df.empty:
+            return history_df
+
         # ===== 统一日期和股票代码类型 =====
         if not df.empty:
             df["trade_date"] = pd.to_datetime(df["trade_date"])
         if not history_df.empty:
             history_df["trade_date"] = pd.to_datetime(history_df["trade_date"])
-    
+
         # ===== 合并历史与新数据（去重） =====
         all_df = pd.concat([history_df, df]).drop_duplicates(
             subset=["trade_date"], keep="last"
         ).sort_values("trade_date").reset_index(drop=True)
     
-        # ===== 计算 ma5 =====
-        self.ma(all_df, 5)
-
-        # ===== 计算 ma10 =====
-        self.ma(all_df, 10)
-
-        # ===== 计算 ma20 =====
-        self.ma(all_df, 20)
+        # ✅ 在你的前提下，这是安全的
+        new_start_idx = len(all_df) - len(df)
+        
+        # 安全兜底（理论上不会触发，但防御性编程）
+        if new_start_idx < 0:
+            new_start_idx = 0
     
-        # ===== 计算 kdj =====
-        compute_kdj(all_df)
-    
-        # ===== 计算 macd =====
-        compute_macd(all_df)
+        # 增量计算（实际会重算 [new_start_idx:]）
+        self.ma(all_df, 5, new_start_idx)
+        self.ma(all_df, 10, new_start_idx)
+        self.ma(all_df, 20, new_start_idx)
+        compute_kdj(all_df, new_start_idx)
     
         return all_df
     

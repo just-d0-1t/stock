@@ -12,9 +12,9 @@ from strategy.predict import Predictor  # 引入你的类版本predict
 # 模型配置
 # -------------------------
 MODELS = [
-#    "kdj",
-#    "fish_tub",
-#    "volumn_detect",
+    "kdj",
+    "fish_tub",
+    "volumn_detect",
     "volumn_break",
     # 可以继续添加其他模型
 ]
@@ -87,9 +87,9 @@ if __name__ == "__main__":
     threads = []
     cond=None
     for model in MODELS:
-        code = "file,data/etf.code" 
-        if model == "volumn_detect" or model == "volumn_break":
-            code = "file,data/zf5_top500.code" 
+        code = "all" 
+        # if model == "volumn_detect" or model == "volumn_break":
+        #     code = "file,data/zf5_top500.code" 
         t = threading.Thread(target=run_predict, args=(model, cond, code))
         t.start()
         threads.append(t)

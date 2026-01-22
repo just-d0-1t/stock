@@ -32,11 +32,11 @@ def get_codes_from_file(path):
 def process_code(code, idx, total, ktype, delay):
     """单只股票处理逻辑"""
     try:
-        time.sleep(delay)
+        # time.sleep(delay)
         print(f"\n[{idx}/{total}] 正在处理股票: {code}")
         df = update(code, None, None, None, ktype)
         if df.empty:
-            time.sleep(delay)
+        #    time.sleep(delay)
             raise ValueError("更新失败")
         return f"✅ {code} 成功"
     except Exception as e:
