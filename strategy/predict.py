@@ -66,6 +66,7 @@ class Predictor:
             "buy": 0,
             "base": fund,
             "fund": fund,
+            "capital": 0,
             "lose": 0,
             "win": 0,
             "hand": 0,
@@ -99,6 +100,7 @@ class Predictor:
                     operation["hand"] = status["hand"]
                     operation["price"] = r["close"]
                     operation["capital"] = capital
+                    status["capital"] = capital
                     operation["cash_flow"] = status["fund"]
                     operation["rate"] = 0
                     status["operations"].append(operation)
@@ -108,6 +110,8 @@ class Predictor:
             else:
                 status["days"] += 1
                 status["record"].append(r)
+                capital = status["hand"] * r["close"]
+                status["capital"] = capital
                 ok, desc = self.sell(r, status, debug)
                 if ok:
                     status["hold"] = False
@@ -125,6 +129,7 @@ class Predictor:
                     operation["hand"] = status["hand"]
                     operation["price"] = r["close"]
                     operation["capital"] = 0
+                    status["capital"] = 0
                     operation["cash_flow"] = status["fund"]
                     operation["strategy"] = desc
                     operation["rate"] = rate
@@ -163,7 +168,8 @@ class Predictor:
                     f"策略 {op['strategy']}\n\n"
                 )
                 self.log(op_str)
-            capital = status["operations"][-1]["capital"] if status["operations"] else 0
+            # capital = status["operations"][-1]["capital"] if status["operations"] else 0
+            capital = status["capital"]
             summary = (
                 f"========= summary ===========\n"
                 f"代码: {code}\n"
