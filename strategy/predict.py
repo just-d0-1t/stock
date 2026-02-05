@@ -25,6 +25,7 @@ import strategy.strategy_hub.kdj_ready as kdj_ready
 import strategy.strategy_hub.volumn_detect as volumn_detect
 import strategy.strategy_hub.volumn_break as volumn_break
 import strategy.strategy_hub.low_volumn_pullback as low_volumn_pullback
+import strategy.strategy_hub.ma120_pullback as ma120_pullback
 
 mapping = {
     "kdj": kdj,
@@ -33,6 +34,7 @@ mapping = {
     "volumn_detect": volumn_detect,
     "volumn_break": volumn_break,
     "low_volumn_pullback": low_volumn_pullback,
+    "ma120_pullback": ma120_pullback,
 }
 
 WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
