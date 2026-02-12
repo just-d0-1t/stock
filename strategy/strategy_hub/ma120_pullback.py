@@ -70,26 +70,26 @@ def pretreatment(stock, operate, tuning=None, debug=False):
 
         # MA20 近30日斜率
         if i >= pullback_cycle:
-            records.loc[i, "ma20_slope_cycle"] = calc_slope(
-                records["ma20"].iloc[i - pullback_cycle: i + 1].values
+            records.loc[i, "ma10_slope_cycle"] = calc_slope(
+                records["ma10"].iloc[i - pullback_cycle: i + 1].values
             )
         else:
-            records.loc[i, "ma20_slope_cycle"] = np.nan
+            records.loc[i, "ma10_slope_cycle"] = np.nan
 
         # MA20 近5日斜率
         if i >= 4:
-            records.loc[i, "ma20_slope_5"] = calc_slope(
-                records["ma20"].iloc[i - 4: i + 1].values
+            records.loc[i, "ma10_slope_5"] = calc_slope(
+                records["ma10"].iloc[i - 4: i + 1].values
             )
         else:
-            records.loc[i, "ma20_slope_5"] = np.nan
+            records.loc[i, "ma10_slope_5"] = np.nan
 
     # ==================================================
     # 3️⃣ 条件3：MA20 / MA120 距离状态（参数化）
     # ==================================================
-    records["ma20_ma120_diff"] = records["ma20"] - records["ma120"]
-    records["ma20_ma120_diff_ratio"] = (
-        records["ma20_ma120_diff"].abs() / records["ma120"]
+    records["ma10_ma120_diff"] = records["ma10"] - records["ma120"]
+    records["ma10_ma120_diff_ratio"] = (
+        records["ma10_ma120_diff"].abs() / records["ma120"]
     )
 
     # 近3日是否全部收盘价 > MA120
@@ -98,13 +98,13 @@ def pretreatment(stock, operate, tuning=None, debug=False):
     ).rolling(window=3, min_periods=3).sum() == 3
 
     records["cond3_ok"] = (
-        (records["ma20_ma120_diff_ratio"] < ma_diff_ratio_limit) &
+        (records["ma10_ma120_diff_ratio"] < ma_diff_ratio_limit) &
         (
             # MA20 在 MA120 上方
-            (records["ma20_ma120_diff"] >= 0) |
+            (records["ma10_ma120_diff"] >= 0) |
             # MA20 在 MA120 下方，但价格已连续3天站上
             (
-                (records["ma20_ma120_diff"] < 0) &
+                (records["ma10_ma120_diff"] < 0) &
                 (records["close_above_ma120_3d"])
             )
         )
@@ -113,15 +113,15 @@ def pretreatment(stock, operate, tuning=None, debug=False):
     # ==================================================
     # 4️⃣ 条件4：历史强势基因（近100日）
     # ==================================================
-    records["ma20_ma120_diff_ratio_pos"] = (
-        (records["ma20"] - records["ma120"]) / records["ma120"]
+    records["ma10_ma120_diff_ratio_pos"] = (
+        (records["ma10"] - records["ma120"]) / records["ma120"]
     )
 
     records["hist_strong_flag"] = False
 
     for i in range(len(records)):
         if i >= 99:
-            hist_max = records["ma20_ma120_diff_ratio_pos"].iloc[i - 99: i + 1].max()
+            hist_max = records["ma10_ma120_diff_ratio_pos"].iloc[i - 99: i + 1].max()
             records.loc[i, "hist_strong_flag"] = hist_max >= hist_diff_ratio_limit
 
     stock["records"] = records
@@ -142,7 +142,7 @@ def buy(r, status=None, debug=False):
         return False, "数据不足"
 
     cond1 = r["ma120_slope_100"] > 0
-    cond2 = (r["ma20_slope_cycle"] < 0) and (r["ma20_slope_5"] > 0)
+    cond2 = (r["ma10_slope_cycle"] < 0) and (r["ma10_slope_5"] > 0)
     cond3 = bool(r["cond3_ok"])
     cond4 = bool(r["hist_strong_flag"])
 
@@ -153,7 +153,7 @@ def buy(r, status=None, debug=False):
             f"c2={cond2}",
             f"c3={cond3}",
             f"c4={cond4}",
-            f"diff_ratio={r['ma20_ma120_diff_ratio']:.2%}"
+            f"diff_ratio={r['ma10_ma120_diff_ratio']:.2%}"
         )
 
     return cond1 and cond2 and cond3 and cond4, desc
@@ -168,5 +168,5 @@ def sell(r, status=None, debug=False):
     跌破 MA20 卖出
     """
     desc = "跌破MA20卖出"
-    return r["close"] < r["ma20"], desc
+    return r["close"] < r["ma10"], desc
 
