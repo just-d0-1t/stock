@@ -10,6 +10,7 @@
 
 import os
 import numpy as np
+import utils.indicator as indicator
 
 
 def is_slope_increasing(arr):
@@ -46,9 +47,12 @@ def pretreatment(stock, operate, tuning, debug):
                 records.loc[idx, "ma20_rising"] = is_rising(ma20_recent)
 
     if operate == "back_test":
+        # records["ma120"] = records["close"].rolling(window=120, min_periods=120).mean().fillna(0)
+        # indicator.ma(records, 30, 0)
         for idx in range(len(records)):
             data_processing(idx)
     if operate == "buy" or operate == "sell":
+        # indicator.ma(records, 30, len(records) - 1)
         data_processing(len(records) - 1)
 
     stock["records"] = records
