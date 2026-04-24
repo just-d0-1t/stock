@@ -17,12 +17,12 @@ import mplfinance as mpf
 from update.fetch_market import MarketAnalyzer  # 你之前实现的类
 
 
-def update(code, start_date, end_date=None, data_path=None, ktype=1, fetch_from="local"):
+def update(code, start_date, end_date=None, data_path=None, typ=1, fetch_from="local"):
     today = datetime.today().date()
 #    today = datetime.strptime("2025-09-05", "%Y-%m-%d").date()
 
     if data_path is None:
-        data_path = config.default_data_path(code, ktype)
+        data_path = config.default_data_path(code, typ)
 
     if not os.path.exists(data_path):
         # 历史文件不存在 → 默认取五年数据
@@ -31,7 +31,7 @@ def update(code, start_date, end_date=None, data_path=None, ktype=1, fetch_from=
             start_date = (today - timedelta(days=1825)).strftime("%Y-%m-%d")
         # 之前没有历史数据，需要从远程获取
         fetch_from = "remote"
-        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype, fetch_from)
+        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, typ, fetch_from)
         df = analyzer.run()
 
     else:
@@ -46,7 +46,7 @@ def update(code, start_date, end_date=None, data_path=None, ktype=1, fetch_from=
         days = 0
         if start_date is None:
             start_date = (last_date - timedelta(days=days)).strftime("%Y-%m-%d")
-        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, ktype, fetch_from)
+        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, typ, fetch_from)
         df = analyzer.run()
 
     return df
@@ -65,8 +65,8 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--end_date',
                         help='结束日期，格式: YYYY-MM-DD，默认为今天')
     parser.add_argument('-p', '--path',
-                        help='数据文件保存位置，默认为./stock_ktype_data.csv')
-    parser.add_argument('-k', '--ktype',
+                        help='数据文件保存位置，默认为./stock_type_data.csv')
+    parser.add_argument('-t', '--typ',
                         type=int,
                         default=1,
                         help='代码类型 1:股票 3:ETF基金')
@@ -79,6 +79,6 @@ if __name__ == "__main__":
     start_date = args.start_date
     end_date = args.end_date
     path = args.path
-    ktype = args.ktype
+    typ = args.typ
     fetch_from = args.fetch_from
-    update(code, start_date, end_date, path, ktype, fetch_from)
+    update(code, start_date, end_date, path, typ, fetch_from)

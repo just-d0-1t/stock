@@ -1,5 +1,6 @@
 data/
 data2/
+bak_data/
 __pycache__/
 config/
 nohup.out

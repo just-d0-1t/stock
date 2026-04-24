@@ -141,9 +141,9 @@ class Predictor:
         return status
 
     # -------------------- 执行股票任务 --------------------
-    def excute(self, code, ktype, operate, tuning, cond, path, target_date, debug=False):
+    def excute(self, code, typ, operate, tuning, cond, path, target_date, debug=False):
         # 加载股票数据
-        ok, stock = load_stock(code, cond, path, target_date, ktype)
+        ok, stock = load_stock(code, cond, path, target_date, typ)
         if not ok:
             if debug:
                 self.log(f"⚠️ 股票 {code} 数据加载失败: {stock}")
@@ -198,7 +198,7 @@ class Predictor:
         return False, ""
 
     # -------------------- 主 predict 函数 --------------------
-    def predict(self, code, ktype, operate, tuning="", cond=None, path=None, target_date=None, debug=False, cache=False, progress_callback=None):
+    def predict(self, code, typ, operate, tuning="", cond=None, path=None, target_date=None, debug=False, cache=False, progress_callback=None):
         codes = []
         if code == "all":
             info_files = glob(os.path.join(DATA_DIR, "*_info.csv"))
@@ -220,7 +220,7 @@ class Predictor:
             if progress_callback:
                 progress_callback(idx, total, c)
 
-            ok, res = self.excute(c, ktype, operate, tuning, cond, path, target_date, debug)
+            ok, res = self.excute(c, typ, operate, tuning, cond, path, target_date, debug)
             if ok and res:
                 results.append(res)
 
@@ -241,7 +241,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="股票策略回测")
 
     parser.add_argument("-c", "--code", required=True)
-    parser.add_argument("-k", "--ktype", type=int, default=1)
+    parser.add_argument("-k", "--typ", type=int, default=1)
     parser.add_argument("-m", "--mode", required=True)
     parser.add_argument("-o", "--operate", required=True)
     parser.add_argument("-t", "--tuning", default="")
@@ -254,5 +254,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     predictor = Predictor(args.mode)
-    predictor.predict(args.code, args.ktype, args.operate, args.tuning, args.stock_cond, args.path, args.date, args.debug, args.use_cache)
+    predictor.predict(args.code, args.typ, args.operate, args.tuning, args.stock_cond, args.path, args.date, args.debug, args.use_cache)
 

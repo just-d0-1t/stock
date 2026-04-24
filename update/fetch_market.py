@@ -68,35 +68,36 @@ class MarketAnalyzer:
     _cache = {}  # 类级别的缓存：{file_path: parsed_dict}
     _cache_lock = threading.Lock()  # 类级别的锁（所有实例共享）
 
-    def __init__(self, code: str, start_date: str, end_date: str = None, data_path: str = None, ktype: int=1, fetch_from: str = "remote"):
+    def __init__(self, code: str, start_date: str, end_date: str = None, data_path: str = None, typ: int=1, fetch_from: str = "remote"):
         """
         :param code: 股票代码，例如 '002747'
         :param start_date: 起始日期，例如 '2025-08-01'
         :param data_path: 股票数据存放路径（CSV 文件），若未指定则默认生成
-        :param ktype: 1.日；2.周；3.月
+        :param typ: 1.股票；2.指数；3.基金
         """
         self.code = code
         self.start_date = start_date
         self.end_date = end_date
-        self.ktype = ktype
+        self.typ = typ
         self.fetch_from = fetch_from
+        print(code, start_date, end_date, data_path, typ, fetch_from)
         if data_path:
             self.data_path = data_path
         else:
-            self.data_path = config.default_data_path(self.code, self.ktype)
+            self.data_path = config.default_data_path(self.code, self.typ)
 
     def fetch_market_data(self):
         """获取交易数据"""
         """股票类型"""
         res_df = pd.DataFrame()
-        if self.ktype == "1" or self.ktype == 1:
+        if self.typ == "1" or self.typ == 1:
             res_df = adata.stock.market.get_market(
                 stock_code=self.code,
                 start_date=self.start_date,
                 end_date=self.end_date,
             )
         """ETF基金类型"""
-        if self.ktype == "2" or self.ktype == 2:
+        if self.typ == "2" or self.typ == 2:
             start_date = self.start_date.replace('-', '') if self.start_date else '19900101'
             today = datetime.today().strftime('%Y%m%d')
             end_date = self.end_date.replace('-', '') if self.end_date else today

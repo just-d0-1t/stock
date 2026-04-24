@@ -85,7 +85,7 @@ def worker_predict(code, operate, mode, tuning, cond, target_date, q: queue.Queu
 
         predictor.predict(
             code.strip() or "all",
-            "1",  # ktype
+            "1",  # typ
             operate,
             tuning,
             cond,

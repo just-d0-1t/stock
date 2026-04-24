@@ -12,7 +12,6 @@ from strategy.predict import Predictor  # 引入你的类版本predict
 # 模型配置
 # -------------------------
 MODELS = [
-    "kdj",
     "fish_tub",
     "volumn_detect",
     "volumn_break",
@@ -47,7 +46,7 @@ def run_predict(model: str, cond = None, code: str = "all"):
         # 调用predict方法
         result = predictor.predict(
             code=code,
-            ktype=1,
+            typ=1,
             operate="buy",
             tuning="",
             cond=cond,

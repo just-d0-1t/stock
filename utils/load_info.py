@@ -3,10 +3,10 @@ import pandas as pd
 import utils.config as config
 
 
-def load_stock_data(code, path, ktype=1):
+def load_stock_data(code, path, typ=1):
     """读取单只股票的 info 和 data 文件，计算市值"""
-    info_file = config.default_info_path(code, ktype)
-    data_file = config.default_data_path(code, ktype)
+    info_file = config.default_info_path(code, typ)
+    data_file = config.default_data_path(code, typ)
     if path:
         data_file = path
 

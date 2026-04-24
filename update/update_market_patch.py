@@ -29,21 +29,21 @@ def get_codes_from_file(path):
         return [line.strip() for line in f if line.strip()]
 
 
-def process_code(code, idx, total, ktype, delay):
+def process_code(code, idx, total, typ, delay):
     """单只股票处理逻辑"""
     try:
-        # time.sleep(delay)
+        time.sleep(delay)
         print(f"\n[{idx}/{total}] 正在处理股票: {code}")
-        df = update(code, None, None, None, ktype)
+        df = update(code, None, None, None, typ, "remote")
         if df.empty:
-        #    time.sleep(delay)
+            time.sleep(delay)
             raise ValueError("更新失败")
         return f"✅ {code} 成功"
     except Exception as e:
         return f"⚠️ 股票 {code} 处理失败: {e}"
 
 
-def update_codes(fetch, ktype, path, delay, workers):
+def update_codes(fetch, typ, path, delay, workers):
     if fetch == 'remote':
         print("获取所有A股股票代码...")
         stock_codes = get_codes_from_remote()
@@ -60,7 +60,7 @@ def update_codes(fetch, ktype, path, delay, workers):
     results = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
         future_to_code = {
-            executor.submit(process_code, code, idx, len(stock_codes), ktype, delay): code
+            executor.submit(process_code, code, idx, len(stock_codes), typ, delay): code
             for idx, code in enumerate(stock_codes, start=1)
         }
         for future in as_completed(future_to_code):
@@ -80,10 +80,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='并发更新所有股票数据')
     parser.add_argument('-f', '--fetch', required=True, help='指定股票代码，local|remote|file')
     parser.add_argument('-p', '--path', help='指定数据文件')
-    parser.add_argument('-k', '--ktype', type=int, default=1, help='数据类型')
+    parser.add_argument('-k', '--typ', type=int, default=1, help='数据类型')
     parser.add_argument('-d', '--delay', type=float, default=0.75, help='请求间延迟（秒）')
     parser.add_argument('-w', '--workers', type=int, default=5, help='并发线程数')
     args = parser.parse_args()
 
-    update_codes(args.fetch, args.ktype, args.path, args.delay, args.workers)
+    update_codes(args.fetch, args.typ, args.path, args.delay, args.workers)
 
