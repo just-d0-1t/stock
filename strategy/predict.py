@@ -26,6 +26,7 @@ import strategy.strategy_hub.volumn_detect as volumn_detect
 import strategy.strategy_hub.volumn_break as volumn_break
 import strategy.strategy_hub.low_volumn_pullback as low_volumn_pullback
 import strategy.strategy_hub.ma120_pullback as ma120_pullback
+import strategy.strategy_hub.volume_pullback as volume_pullback
 
 mapping = {
     "kdj": kdj,
@@ -35,7 +36,9 @@ mapping = {
     "volumn_break": volumn_break,
     "low_volumn_pullback": low_volumn_pullback,
     "ma120_pullback": ma120_pullback,
+    "volume_pullback": volume_pullback,
 }
+### 注册完成
 
 WORK_DIR = os.environ.get("STOCK_WORK_DIR", ".")
 DATA_DIR = f"{WORK_DIR}/data"  # 本地数据路径
@@ -81,7 +84,8 @@ class Predictor:
                 self.log(">>> 用户终止任务")
                 return status
 
-            if idx < 21:
+            # if idx < 21:
+            if idx < 10:
                 continue
 
             if not status["hold"]:

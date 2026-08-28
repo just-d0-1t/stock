@@ -69,7 +69,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--typ',
                         type=int,
                         default=1,
-                        help='代码类型 1:股票 3:ETF基金')
+                        help='代码类型 1:股票 2:指数 3.基金')
     parser.add_argument('-f', '--fetch_from', default="local",
                         help='数据源，remote|local')
 
