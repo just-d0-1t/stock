@@ -63,11 +63,12 @@ def fetch(workers, delay=1):
         print(f"获取股票失败")
         return
 
-    # 并发执行
+    # 并发执行（先建索引，避免循环内 O(n²) 查找）
+    stock_info_map = {row["stock_code"]: row for _, row in res_df.iterrows()}
     results = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
         future_to_code = {
-            executor.submit(fetch_stock, code, res_df[res_df["stock_code"] == code].iloc[0], idx, len(stock_codes), delay): code
+            executor.submit(fetch_stock, code, stock_info_map[code], idx, len(stock_codes), delay): code
             for idx, code in enumerate(stock_codes, start=1)
         }
         for future in as_completed(future_to_code):
