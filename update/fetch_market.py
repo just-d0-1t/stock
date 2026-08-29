@@ -57,8 +57,9 @@ def compute_kdj(all_df, new_start_idx, n=9, k_smooth=3, d_smooth=3):
     for col in ['K', 'D', 'J']:
         all_df.loc[update_indices, col] = update_slice[col].values
 
-    # === 4. 更新信号（只更新 new_start_idx 之后）===
-    all_df.loc[:new_start_idx - 1, 'kdj_signal'] = all_df.get('kdj_signal', 'no_cross')[:new_start_idx]
+    # === 4. 更新信号（保留历史，只重算 new_start_idx 之后）===
+    if 'kdj_signal' not in all_df.columns:
+        all_df['kdj_signal'] = 'no_cross'
     all_df.loc[new_start_idx:, 'kdj_signal'] = 'no_cross'  # 初始化
 
     for i in range(new_start_idx, len(all_df)):
@@ -71,9 +72,6 @@ def compute_kdj(all_df, new_start_idx, n=9, k_smooth=3, d_smooth=3):
         elif k_prev > d_prev and k_curr < d_curr:
             all_df.at[i, 'kdj_signal'] = 'death_cross'
 
-    # 清理临时列
-    if 'rsv' in all_df.columns:
-        all_df.drop(columns=['rsv'], inplace=True)
 
 
 class MarketAnalyzer:
