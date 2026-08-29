@@ -1,13 +1,23 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+@file: fetch_market.py
+@author: vanilla
+@date: 2025-09-05
+@desc: 行情数据拉取、指标计算与落盘。
+
+MarketAnalyzer 只负责“拉取新数据 → 合并历史 → 增量计算指标 → 保存 CSV”。
+数据从哪里拉取由数据源注册表决定：-f/--fetch_from 传入名称
+（remote | ths | local，见 update/sources/__init__.py）。
+新增数据源不需要改动本文件。
+"""
+
 import os
-import pandas as pd
-import adata
-import akshare as ak
-from datetime import datetime, timedelta
-import threading
 import numpy as np
+import pandas as pd
 import utils.config as config
-import update.fetch_market_local as fl
-from update.ths_api import ThsClient
+from update.sources import create_source
 
 
 def compute_kdj(all_df, new_start_idx, n=9, k_smooth=3, d_smooth=3):
@@ -24,7 +34,7 @@ def compute_kdj(all_df, new_start_idx, n=9, k_smooth=3, d_smooth=3):
     # 预热窗口长度：经验值 3*n（可调整）
     warmup = max(n * 3, 50)  # 至少 50 行保证 EWM 收敛
     calc_start = max(0, new_start_idx - warmup)
-    
+
     # 提取计算子集
     calc_df = all_df.iloc[calc_start:].copy()
 
@@ -67,93 +77,37 @@ def compute_kdj(all_df, new_start_idx, n=9, k_smooth=3, d_smooth=3):
 
 
 class MarketAnalyzer:
-    _cache = {}  # 类级别的缓存：{file_path: parsed_dict}
-    _cache_lock = threading.Lock()  # 类级别的锁（所有实例共享）
+    """
+    从指定数据源获取日线数据，维护本地 CSV（含 MA/KDJ 等指标）。
 
-    def __init__(self, code: str, start_date: str, end_date: str = None, data_path: str = None, typ: int=1, fetch_from: str = "remote"):
+    数据源通过 fetch_from 指定（见 update/sources.SOURCE_REGISTRY），
+    例如：remote(adata/akshare) | ths(同花顺) | local(本地快照)。
+    """
+
+    def __init__(self, code: str, start_date: str, end_date: str = None,
+                 data_path: str = None, typ: int = 1, fetch_from: str = "remote",
+                 source_kwargs: dict = None):
         """
         :param code: 股票代码，例如 '002747'
         :param start_date: 起始日期，例如 '2025-08-01'
+        :param end_date: 结束日期（默认由数据源决定）
         :param data_path: 股票数据存放路径（CSV 文件），若未指定则默认生成
         :param typ: 1.股票；2.指数；3.基金
-        :param fetch_from: 数据源 remote(adata/akshare) | local | ths(同花顺)
+        :param fetch_from: 数据源名称（remote | ths | local，见 update.sources）
+        :param source_kwargs: 透传给数据源构造函数的额外参数，如
+            {"snapshot_path": "..."}（local 源）
         """
         self.code = code
         self.start_date = start_date
         self.end_date = end_date
         self.typ = typ
-        self.fetch_from = fetch_from
-        print(code, start_date, end_date, data_path, typ, fetch_from)
+        self.source = create_source(fetch_from, typ=typ, **(source_kwargs or {}))
         if data_path:
             self.data_path = data_path
         else:
             self.data_path = config.default_data_path(self.code, self.typ)
 
-    def fetch_market_data(self):
-        """获取交易数据"""
-        """股票类型"""
-        res_df = pd.DataFrame()
-        if self.typ == "1" or self.typ == 1:
-            res_df = adata.stock.market.get_market(
-                stock_code=self.code,
-                start_date=self.start_date,
-                end_date=self.end_date,
-            )
-        """ETF基金类型"""
-        if self.typ == "2" or self.typ == 2:
-            start_date = self.start_date.replace('-', '') if self.start_date else '19900101'
-            today = datetime.today().strftime('%Y%m%d')
-            end_date = self.end_date.replace('-', '') if self.end_date else today
-            # akshare 的实际接口可能需要调整
-            print(start_date, end_date)
-            res_df = ak.fund_etf_hist_em(
-                symbol=self.code,
-                start_date=start_date,
-                end_date=end_date,
-                adjust="qfq",
-            )
-        return res_df
-
-
-    def fetch_market_data_from_ths(self):
-        """通过同花顺行情 API 获取（前复权）日线数据，替代 adata 避免限频"""
-        if self.typ not in (1, "1"):
-            raise ValueError(f"同花顺行情 API 暂仅支持股票(typ=1)，当前 typ={self.typ}")
-        client = ThsClient()
-        end_date = self.end_date or datetime.today().strftime("%Y-%m-%d")
-        return client.fetch_daily(
-            code=self.code,
-            start_date=self.start_date,
-            end_date=end_date,
-        )
-
-    def fetch_market_data_from_local(self):
-        now = datetime.now()
-        date_str = now.strftime("%Y-%m-%d")
-        file_path = f"/root/stock/data/{date_str}_all_market.txt"
-
-        # 先快速检查缓存（无锁，提高命中时的性能）
-        if file_path in self._cache:
-            res = self._cache[file_path]
-            return res.get(self.code, pd.DataFrame())
-
-        # 缓存未命中 → 获取锁，防止多个线程重复加载
-        with self._cache_lock:
-            # 再次检查（double-check pattern）：可能在等待锁时已被其他线程加载
-            if file_path in self._cache:
-                res = self._cache[file_path]
-            else:
-                print("load stock_data")
-                res = fl.load_stock_data(file_path)
-                self._cache[file_path] = res
-
-        return res.get(self.code, pd.DataFrame())
-
     def load_history(self):
-        # """读取历史数据（如存在）"""
-        # if os.path.exists(self.data_path):
-        #     return pd.read_csv(self.data_path, parse_dates=["trade_date"])
-        # return pd.DataFrame()
         """读取历史数据（如存在）"""
         if os.path.exists(self.data_path):
             return pd.read_csv(
@@ -175,24 +129,24 @@ class MarketAnalyzer:
         col_above = f"above_ma{period}"
         col_first_above = f"first_above_ma{period}"
         col_first_under = f"first_under_ma{period}"
-    
+
         # === 1. 计算 MA（只需从 new_start_idx - win + 1 开始算，但为安全取更早一点）
         start_calc = max(0, new_start_idx - win)
         subset = all_df.iloc[start_calc:].copy()
         subset[col_ma] = subset["close"].rolling(window=win, min_periods=win).mean()
-    
+
         # 将计算结果写回 all_df
         all_df.loc[subset.index, col_ma] = subset[col_ma]
-    
+
         # === 2. 计算 above_ma
         mask = (all_df[col_ma] > 0) & (all_df["close"] > all_df[col_ma])
         all_df[col_above] = np.where(mask, "y", "n")
-    
+
         # === 3. 计算 first_above_ma 和 first_under_ma（只需从 new_start_idx 开始检查）
         # 初始化为 "n"
         all_df[col_first_above] = "n"
         all_df[col_first_under] = "n"
-    
+
         for i in range(new_start_idx, len(all_df)):
             if all_df.at[i, col_above] == "y":
                 if i == 0 or all_df.at[i-1, col_above] == "n":
@@ -251,7 +205,7 @@ class MarketAnalyzer:
         all_df = pd.concat([history_df, df]).drop_duplicates(
             subset=["trade_date"], keep="last"
         ).sort_values("trade_date").reset_index(drop=True)
-    
+
         # 前复权数据源（如同花顺）段首行没有昨收，用合并后的前一日收盘补齐
         if "pre_close" in all_df.columns:
             all_df["pre_close"] = all_df["pre_close"].fillna(all_df["close"].shift(1))
@@ -260,35 +214,35 @@ class MarketAnalyzer:
 
         # ✅ 在你的前提下，这是安全的
         new_start_idx = len(all_df) - len(df)
-        
+
         # 安全兜底（理论上不会触发，但防御性编程）
         if new_start_idx < 0:
             new_start_idx = 0
-    
+
         # 增量计算（实际会重算 [new_start_idx:]）
         self.ma(all_df, 5, new_start_idx)
         self.ma(all_df, 10, new_start_idx)
         self.ma(all_df, 20, new_start_idx)
         compute_kdj(all_df, new_start_idx)
-    
+
         return all_df
-    
+
     def save_data(self, df: pd.DataFrame):
         """以追加方式写入 CSV，并保持股票代码为字符串"""
         # 写入 CSV
         df.to_csv(self.data_path, index=False, mode="w", encoding="utf-8-sig")
 
     def run(self):
-        """执行完整流程"""
-        print(f"获取股票 {self.code} 自 {self.start_date} 起的数据...")
-        if self.fetch_from == "ths":
-            new_data = self.fetch_market_data_from_ths()
-        elif self.fetch_from == "remote":
-            new_data = self.fetch_market_data()
-        else:
-            new_data = self.fetch_market_data_from_local()
+        """执行完整流程：拉取新数据 → 合并历史 → 增量计算指标 → 保存 CSV"""
+        """各渠道需要提供的基础数据 trade_date, open, close, high, low, volume, amount, pre_close"""
+        print(f"获取股票 {self.code} 自 {self.start_date} 起的数据（数据源: {self.source.name}）...")
+        new_data = self.source.fetch_daily(
+            code=self.code,
+            start_date=self.start_date,
+            end_date=self.end_date,
+        )
 
-        if new_data.empty:
+        if new_data is None or new_data.empty:
             print(f"⚠️ 股票 {self.code} new_data 是空的 DataFrame")
             return new_data
         history_data = self.load_history()
@@ -298,4 +252,3 @@ class MarketAnalyzer:
 
         print(f"分析完成，数据已保存到 {self.data_path}")
         return all_data
-

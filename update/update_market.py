@@ -13,7 +13,7 @@ import os
 import utils.config as config
 import pandas as pd
 from datetime import datetime, timedelta
-from update.fetch_market import MarketAnalyzer  # 你之前实现的类
+from update.fetch_market import MarketAnalyzer
 
 
 def update(code, start_date, end_date=None, data_path=None, typ=1, fetch_from="local"):
@@ -71,7 +71,7 @@ if __name__ == "__main__":
                         default=1,
                         help='代码类型 1:股票 2:指数 3.基金')
     parser.add_argument('-f', '--fetch_from', default="local",
-                        help='数据源，remote|local|ths')
+                        help='数据源，remote|ths|local（见 update/sources 注册表）')
 
     # 解析参数
     args = parser.parse_args()
