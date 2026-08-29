@@ -4,6 +4,7 @@ import json
 import time
 from datetime import datetime, timedelta
 import os
+import utils.config as config
 
 # https://quote.eastmoney.com/center/gridlist.html#hs_a_board
 
@@ -18,11 +19,11 @@ import os
 now = datetime.now()
 date_str = now.strftime("%Y-%m-%d")
 
-output_file = f"/root/stock/data/{date_str}_all_market.txt"
+output_file = os.path.join(config.DATA_DIR, f"{date_str}_all_market.txt")
 
 if os.path.exists(output_file):
     new_timestr = datetime.now().strftime("%Y-%m-%d_%H:%M")  # 注意：Windows 文件名不支持冒号 ":"
-    new_file = f"/root/stock/data/{new_timestr}_all_market.txt"
+    new_file = os.path.join(config.DATA_DIR, f"{new_timestr}_all_market.txt")
     
     # 重命名文件
     try:

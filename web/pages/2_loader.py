@@ -4,8 +4,8 @@ import os
 import base64
 import json
 
-# 允许读取的结果目录（请按实际修改）
-RESULT_DIR = "/tmp/predict"  # 或 "/root/stock/daily_predicts"
+# 预测结果目录（与 strategy/daily_predict.py 保持一致）
+RESULT_DIR = os.path.join(os.environ.get("STOCK_WORK_DIR", "."), "predict")
 
 st.set_page_config(page_title="查看预测文件", layout="wide")
 st.title("📁 查看每日预测文件 (Loader)")

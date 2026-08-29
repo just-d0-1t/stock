@@ -19,7 +19,7 @@ MODELS = [
 ]
 
 NOTIFY_URL = os.environ.get("STOCK_NOTIFY_URL", ".")
-RESULT_DIR = "/tmp/predict"
+RESULT_DIR = os.path.join(os.environ.get("STOCK_WORK_DIR", "."), "predict")
 os.makedirs(RESULT_DIR, exist_ok=True)
 
 # -------------------------

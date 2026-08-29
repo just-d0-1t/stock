@@ -10,9 +10,12 @@
 """
 
 import json
+import os
 import threading
 import pandas as pd
 from datetime import datetime
+
+import utils.config as config
 
 from update.sources.base import DailySource
 
@@ -184,7 +187,7 @@ class LocalSource(DailySource):
         if self.snapshot_path:
             return self.snapshot_path
         date_str = datetime.now().strftime("%Y-%m-%d")
-        return f"/root/stock/data/{date_str}_all_market.txt"
+        return os.path.join(config.DATA_DIR, f"{date_str}_all_market.txt")
 
     def fetch_daily(self, code, start_date=None, end_date=None):
         """返回快照中该股票的当日数据（快照为单日，日期参数忽略）"""
