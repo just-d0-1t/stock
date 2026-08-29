@@ -5,7 +5,9 @@ import akshare as ak
 from datetime import datetime, timedelta
 import threading
 import numpy as np
+import utils.config as config
 import update.fetch_market_local as fl
+from update.ths_api import ThsClient
 
 
 def compute_kdj(all_df, new_start_idx, n=9, k_smooth=3, d_smooth=3):
@@ -74,6 +76,7 @@ class MarketAnalyzer:
         :param start_date: 起始日期，例如 '2025-08-01'
         :param data_path: 股票数据存放路径（CSV 文件），若未指定则默认生成
         :param typ: 1.股票；2.指数；3.基金
+        :param fetch_from: 数据源 remote(adata/akshare) | local | ths(同花顺)
         """
         self.code = code
         self.start_date = start_date
@@ -111,6 +114,18 @@ class MarketAnalyzer:
             )
         return res_df
 
+
+    def fetch_market_data_from_ths(self):
+        """通过同花顺行情 API 获取（前复权）日线数据，替代 adata 避免限频"""
+        if self.typ not in (1, "1"):
+            raise ValueError(f"同花顺行情 API 暂仅支持股票(typ=1)，当前 typ={self.typ}")
+        client = ThsClient()
+        end_date = self.end_date or datetime.today().strftime("%Y-%m-%d")
+        return client.fetch_daily(
+            code=self.code,
+            start_date=self.start_date,
+            end_date=end_date,
+        )
 
     def fetch_market_data_from_local(self):
         now = datetime.now()
@@ -237,6 +252,12 @@ class MarketAnalyzer:
             subset=["trade_date"], keep="last"
         ).sort_values("trade_date").reset_index(drop=True)
     
+        # 前复权数据源（如同花顺）段首行没有昨收，用合并后的前一日收盘补齐
+        if "pre_close" in all_df.columns:
+            all_df["pre_close"] = all_df["pre_close"].fillna(all_df["close"].shift(1))
+        else:
+            all_df["pre_close"] = all_df["close"].shift(1)
+
         # ✅ 在你的前提下，这是安全的
         new_start_idx = len(all_df) - len(df)
         
@@ -260,7 +281,9 @@ class MarketAnalyzer:
     def run(self):
         """执行完整流程"""
         print(f"获取股票 {self.code} 自 {self.start_date} 起的数据...")
-        if self.fetch_from == "remote":
+        if self.fetch_from == "ths":
+            new_data = self.fetch_market_data_from_ths()
+        elif self.fetch_from == "remote":
             new_data = self.fetch_market_data()
         else:
             new_data = self.fetch_market_data_from_local()

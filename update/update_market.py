@@ -13,7 +13,6 @@ import os
 import utils.config as config
 import pandas as pd
 from datetime import datetime, timedelta
-import mplfinance as mpf
 from update.fetch_market import MarketAnalyzer  # 你之前实现的类
 
 
@@ -29,8 +28,9 @@ def update(code, start_date, end_date=None, data_path=None, typ=1, fetch_from="l
         print(data_path)
         if start_date is None:
             start_date = (today - timedelta(days=1825)).strftime("%Y-%m-%d")
-        # 之前没有历史数据，需要从远程获取
-        fetch_from = "remote"
+        # 之前没有历史数据，需要从远程获取（ths 已显式指定则保留）
+        if fetch_from == "local":
+            fetch_from = "remote"
         analyzer = MarketAnalyzer(code, start_date, end_date, data_path, typ, fetch_from)
         df = analyzer.run()
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
                         default=1,
                         help='代码类型 1:股票 2:指数 3.基金')
     parser.add_argument('-f', '--fetch_from', default="local",
-                        help='数据源，remote|local')
+                        help='数据源，remote|local|ths')
 
     # 解析参数
     args = parser.parse_args()
