@@ -11,31 +11,12 @@
 import os
 import numpy as np
 
-
 # ==========================
 # 买入策略
 # ==========================
 import numpy as np
 import pandas as pd
-
-# ✅ 解析参数字符串，例如 "prev=5,volumn_amplify=2"
-def parse_tuning(tuning_str: str):
-    result = {}
-    if not tuning_str:
-        return result
-    for item in tuning_str.split(","):
-        if "=" not in item:
-            continue
-        k, v = item.split("=", 1)
-        v = v.strip()
-        # 尝试转成数字
-        try:
-            v = float(v) if "." in v else int(v)
-        except ValueError:
-            pass
-        result[k.strip()] = v
-    return result
-
+from utils.parse import parse_tuning
 
 def pretreatment(stock, operate, tuning, debug):
     """股票数据预处理，用于策略分析前的数据准备。"""
@@ -106,7 +87,6 @@ def pretreatment(stock, operate, tuning, debug):
 
     stock["records"] = records
 
-
 def buy(r, status, debug=False):
     """
     策略：成交量连续两天 > 前五天均值 * 2，且前五天波动不大，当日收盘 > 开盘
@@ -126,7 +106,6 @@ def buy(r, status, debug=False):
         print(desc, " ", cond_3)
         print(desc, " ", cond_4)
     return cond_1 and cond_2 and cond_3 and cond_4, desc
-
 
 # ==========================
 # 卖出策略

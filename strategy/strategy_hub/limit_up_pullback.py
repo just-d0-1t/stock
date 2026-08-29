@@ -22,27 +22,7 @@
 
 import numpy as np
 import pandas as pd
-
-
-def parse_tuning(tuning_str: str):
-    """解析参数字符串，例如：period=100,min_streak=2,pullback_pct=0.2,limit_up_pct=0.098"""
-    result = {}
-    if not tuning_str:
-        return result
-
-    for item in tuning_str.split(","):
-        if "=" not in item:
-            continue
-        k, v = item.split("=", 1)
-        v = v.strip()
-        try:
-            v = float(v) if "." in v else int(v)
-        except ValueError:
-            pass
-        result[k.strip()] = v
-
-    return result
-
+from utils.parse import parse_tuning
 
 def pretreatment(stock, operate, tuning, debug):
     """
@@ -153,7 +133,6 @@ def pretreatment(stock, operate, tuning, debug):
     records["buy_signal"] = buy_signal
     stock["records"] = records
 
-
 def buy(r, status=None, debug=False):
     """
     当天涨停，且前期完成“连续涨停 → 大幅回调”，则买入。
@@ -165,7 +144,6 @@ def buy(r, status=None, debug=False):
         print("last_streak_days:", r.get("last_streak_days"))
         print("buy_signal:", r.get("buy_signal"))
     return bool(r.get("buy_signal", False)), desc
-
 
 def sell(r, status=None, debug=False):
     """

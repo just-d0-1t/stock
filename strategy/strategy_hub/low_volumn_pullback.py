@@ -7,25 +7,7 @@
 """
 
 import numpy as np
-
-# ✅ 解析参数字符串，例如 "prev=5,volumn_amplify=2"
-def parse_tuning(tuning_str: str):
-    result = {}
-    if not tuning_str:
-        return result
-    for item in tuning_str.split(","):
-        if "=" not in item:
-            continue
-        k, v = item.split("=", 1)
-        v = v.strip()
-        # 尝试转成数字
-        try:
-            v = float(v) if "." in v else int(v)
-        except ValueError:
-            pass
-        result[k.strip()] = v
-    return result
-
+from utils.parse import parse_tuning
 
 def calc_slope(values):
     """计算斜率"""
@@ -35,7 +17,6 @@ def calc_slope(values):
     # 用线性回归求斜率
     k, _ = np.polyfit(x, values, 1)
     return k
-
 
 def pretreatment(stock, operate, tuning=None, debug=False):
     """
@@ -89,7 +70,6 @@ def pretreatment(stock, operate, tuning=None, debug=False):
 
     stock["records"] = records
 
-
 def buy(r, status=None, debug=False):
     """
     策略逻辑：
@@ -113,7 +93,6 @@ def buy(r, status=None, debug=False):
 
     all_cond = cond1 and cond2 and cond3 and cond4 and cond5 and cond6 and cond7
     return all_cond, desc
-
 
 def sell(r, status=None, debug=False):
     """

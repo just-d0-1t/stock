@@ -10,31 +10,7 @@
 
 import numpy as np
 import pandas as pd
-
-
-# ==========================
-# 参数解析
-# ==========================
-
-def parse_tuning(tuning_str: str):
-    """解析参数字符串，例如：volume_period=5,volume_base_period=10,volume_amplify=1.5"""
-    result = {}
-    if not tuning_str:
-        return result
-
-    for item in tuning_str.split(","):
-        if "=" not in item:
-            continue
-        k, v = item.split("=", 1)
-        v = v.strip()
-        try:
-            v = float(v) if "." in v else int(v)
-        except ValueError:
-            pass
-        result[k.strip()] = v
-
-    return result
-
+from utils.parse import parse_tuning
 
 def calculate_normalized_slope(series):
     """
@@ -55,7 +31,6 @@ def calculate_normalized_slope(series):
     slope = np.polyfit(x, y, 1)[0]
 
     return slope / mean_value
-
 
 # ==========================
 # 数据预处理
@@ -161,7 +136,6 @@ def pretreatment(stock, operate, tuning, debug):
 
     stock["records"] = records
 
-
 # ==========================
 # 买入策略
 # ==========================
@@ -221,7 +195,6 @@ def buy(r, status, debug=False):
         return True, desc
 
     return False, ""
-
 
 # ==========================
 # 卖出策略
