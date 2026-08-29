@@ -147,9 +147,9 @@ class Predictor:
         return status
 
     # -------------------- 执行股票任务 --------------------
-    def excute(self, code, typ, operate, tuning, cond, path, target_date, debug=False):
+    def excute(self, code, typ, operate, tuning, path, target_date, debug=False):
         # 加载股票数据
-        ok, stock = load_stock(code, cond, path, target_date, typ)
+        ok, stock = load_stock(code, path, target_date, typ)
         if not ok:
             if debug:
                 self.log(f"⚠️ 股票 {code} 数据加载失败: {stock}")
@@ -179,7 +179,6 @@ class Predictor:
             summary = (
                 f"========= summary ===========\n"
                 f"代码: {code}\n"
-                f"名称: {stock['name']}\n"
                 f"量化策略: {self.strategy_module.__name__}\n"
                 f"数据路径: {path}\n"
                 f"涨跌: {(status['fund'] + capital - status['base']) * 100.0 / status['base']:.2f}%\n"
@@ -194,21 +193,19 @@ class Predictor:
             ok, desc = self.buy(r, {}, debug)
             if ok:
                 close = r["close"]
-                market = round(stock['market_cap'] / 10000 / 10000, 2)
-                amount = round(stock['amount'] / 10000 / 10000, 2)
                 rise = round((close - r["open"]) * 100 / r["open"], 2)
-                res = f"推荐买入股票 {stock['name']}, 代码 {stock['code']}, 日期 {r['trade_date']}, 最新股价 {close}, 市值 {market} 亿, 昨日成交额 {amount} 亿, 当日涨幅 {rise}% \n{desc}\n"
+                res = f"推荐买入股票 代码 {code}, 日期 {r['trade_date']}, 最新股价 {close}, 当日涨幅 {rise}% \n{desc}\n"
                 self.log(res)
                 return True, res
 
         return False, ""
 
     # -------------------- 主 predict 函数 --------------------
-    def predict(self, code, typ, operate, tuning="", cond=None, path=None, target_date=None, debug=False, cache=False, progress_callback=None):
+    def predict(self, code, typ, operate, tuning="", path=None, target_date=None, debug=False, cache=False, progress_callback=None):
         codes = []
         if code == "all":
-            info_files = glob(os.path.join(DATA_DIR, "*_info.csv"))
-            codes = [os.path.basename(f).split("_")[0] for f in info_files]
+            data_files = glob(os.path.join(DATA_DIR, "*_data.csv"))
+            codes = [os.path.basename(f).split("_")[0] for f in data_files]
         elif "file" in code:
             file = code.split(",")[1]
             codes = self.get_codes_from_file(file)
@@ -226,7 +223,7 @@ class Predictor:
             if progress_callback:
                 progress_callback(idx, total, c)
 
-            ok, res = self.excute(c, typ, operate, tuning, cond, path, target_date, debug)
+            ok, res = self.excute(c, typ, operate, tuning, path, target_date, debug)
             if ok and res:
                 results.append(res)
 
@@ -251,7 +248,6 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--mode", required=True)
     parser.add_argument("-o", "--operate", required=True)
     parser.add_argument("-t", "--tuning", default="")
-    parser.add_argument("-s", "--stock_cond", default="")
     parser.add_argument("-p", "--path")
     parser.add_argument("-q", "--date")
     parser.add_argument("-d", "--debug", action="store_true")
@@ -260,4 +256,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     predictor = Predictor(args.mode)
-    predictor.predict(args.code, args.typ, args.operate, args.tuning, args.stock_cond, args.path, args.date, args.debug, args.use_cache)
+    predictor.predict(args.code, args.typ, args.operate, args.tuning, args.path, args.date, args.debug, args.use_cache)

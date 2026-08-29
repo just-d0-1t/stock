@@ -12,7 +12,6 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from utils.load_info import load_stock_data
 
 
 def is_rising(arr):

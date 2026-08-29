@@ -55,10 +55,8 @@ with col2:
     st.markdown("**股票筛选**")
     if operate == "back_test":
         code_input = st.text_input("股票代码（回测）", value="", placeholder="例如：600519")
-        stock_cond = st.text_input("股票筛选条件（市值，回测忽略）", value="")
     else:
         code_input = st.text_area("股票代码 / all", value="all", height=80)
-        stock_cond = st.text_input("市值，示例：1000", value="")
 
 # -------------------- 输出区域 --------------------
 log_box = st.empty()
@@ -67,7 +65,7 @@ progress_bar = st.progress(0)
 progress_text = st.empty()
 
 # -------------------- worker 线程 --------------------
-def worker_predict(code, operate, mode, tuning, cond, target_date, q: queue.Queue, stop_flag: threading.Event):
+def worker_predict(code, operate, mode, tuning, target_date, q: queue.Queue, stop_flag: threading.Event):
     def print_q(txt):
         q.put(("stdout", txt))
 
@@ -77,7 +75,7 @@ def worker_predict(code, operate, mode, tuning, cond, target_date, q: queue.Queu
     try:
         date_str = target_date.isoformat() if isinstance(target_date, date) else str(target_date)
         print_q(">>> 开始执行：\n")
-        print_q(f"操作={operate}, 策略={mode}, 参数={tuning}, 股票过滤条件={cond}, date={date_str}\n")
+        print_q(f"操作={operate}, 策略={mode}, 参数={tuning}, date={date_str}\n")
         print_q(">>> 输出将实时显示，请耐心等待。\n")
 
         # 每个任务独立 Predictor 实例，保证线程安全
@@ -88,7 +86,6 @@ def worker_predict(code, operate, mode, tuning, cond, target_date, q: queue.Queu
             "1",  # typ
             operate,
             tuning,
-            cond,
             None,
             date_str,
             debug=False,
@@ -118,7 +115,7 @@ with col_btn1:
                 t = threading.Thread(
                     target=worker_predict,
                     args=(code_input.strip() or "all",
-                          operate, mode, tuning_string, stock_cond.strip() or None,
+                          operate, mode, tuning_string,
                           target_date,
                           st.session_state.output_queue,
                           st.session_state.stop_flag),

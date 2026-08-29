@@ -33,7 +33,7 @@ def encrypt_path(path: str) -> str:
 # -------------------------
 # 单模型执行函数
 # -------------------------
-def run_predict(model: str, cond = None, code: str = "all"):
+def run_predict(model: str, code: str = "all"):
     """执行单个模型预测任务"""
     predictor = Predictor(model)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -49,7 +49,6 @@ def run_predict(model: str, cond = None, code: str = "all"):
             typ=1,
             operate="buy",
             tuning="",
-            cond=cond,
         )
 
         # 写入文件
@@ -84,12 +83,11 @@ if __name__ == "__main__":
     print(f"=== {datetime.now()} 开始执行每日预测任务 ===")
 
     threads = []
-    cond=None
     for model in MODELS:
         code = "all" 
         # if model == "volumn_detect" or model == "volumn_break":
         #     code = "file,data/zf5_top500.code" 
-        t = threading.Thread(target=run_predict, args=(model, cond, code))
+        t = threading.Thread(target=run_predict, args=(model, code))
         t.start()
         threads.append(t)
 
