@@ -8,10 +8,7 @@
 @desc: 鱼盆模型。
 """
 
-import os
 import numpy as np
-import utils.indicator as indicator
-
 
 def is_slope_increasing(arr):
     """
@@ -20,14 +17,12 @@ def is_slope_increasing(arr):
     slopes = np.diff(arr)  # 相邻天数差分
     return all(slopes[i] >= slopes[i-1] for i in range(1, len(slopes)))
 
-
 def is_rising(arr):
     """
     判断指标是否转强
     返回: bool
     """
     return arr[-1] == max(arr) and len(set(arr)) > 1
-
 
 def pretreatment(stock, operate, tuning, debug):
     records = stock["records"]
@@ -54,7 +49,6 @@ def pretreatment(stock, operate, tuning, debug):
         data_processing(len(records) - 1)
 
     stock["records"] = records
-
 
 def buy(r, status, debug=False):
     desc = "策略: 鱼盆模型，超过ma20买入"

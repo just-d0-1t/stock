@@ -8,14 +8,7 @@
 @desc: 股票回测策略脚本，支持多买卖策略组合和调试模式。
 """
 
-import os
 import numpy as np
-
-# ==========================
-# 买入策略
-# ==========================
-import numpy as np
-import pandas as pd
 from utils.parse import parse_tuning
 
 def pretreatment(stock, operate, tuning, debug):

@@ -8,9 +8,7 @@
 @desc: 股票回测策略脚本，支持多买卖策略组合和调试模式。
 """
 
-import os
 import numpy as np
-
 
 def is_slope_increasing(arr):
     """
@@ -18,7 +16,6 @@ def is_slope_increasing(arr):
     """
     slopes = np.diff(arr)  # 相邻天数差分
     return all(slopes[i] >= slopes[i-1] for i in range(1, len(slopes)))
-
 
 def is_continuous_rising(arr):
     """
@@ -30,7 +27,6 @@ def is_continuous_rising(arr):
         if arr[i] < arr[i-1]:
             return False
     return True
-
 
 # ==========================
 # 买入策略
@@ -62,7 +58,6 @@ def pretreatment(stock, operate, tuning, debug):
 
     stock["records"] = records
 
-
 """
 KDJ即将出现金叉
 """
@@ -70,7 +65,6 @@ def buy(r, status, debug=False):
     desc = "策略：KDJ即将出现金叉"
     if debug: print("[debug] buy_strategy_kdj_ready", r)
     return r["cross_ready"], desc
-
 
 # ==========================
 # 卖出策略

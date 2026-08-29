@@ -21,7 +21,6 @@
 """
 
 import numpy as np
-import pandas as pd
 from utils.parse import parse_tuning
 
 def pretreatment(stock, operate, tuning, debug):

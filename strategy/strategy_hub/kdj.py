@@ -8,11 +8,7 @@
 @desc: 股票回测策略脚本，支持多买卖策略组合和调试模式。
 """
 
-import os
-import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
-
 
 def is_rising(arr):
     """
@@ -31,7 +27,6 @@ def is_continuous_rising(arr):
         if arr[i] < arr[i-1]:
             return False
     return True
-
 
 def pretreatment(stock, operate, tuning, debug):
     records = stock["records"]
@@ -79,7 +74,6 @@ def pretreatment(stock, operate, tuning, debug):
 
     stock["records"] = records
 
-
 # ==========================
 # 卖出策略
 # ==========================
@@ -92,7 +86,6 @@ def buy(r, status, debug=False):
         and r["close"] > r["open"]
     #    and r["trend_up_60"]  # ✅ 新增趋势过滤
     ), desc
-
 
 # ==========================
 # 卖出策略
