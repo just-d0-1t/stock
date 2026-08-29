@@ -86,7 +86,12 @@ def run(df_benchmark, code, mtype):
     df_stock = load_market(code, mtype)
     check_stock_against_benchmark(df_stock, code, df_benchmark, 15)
 
-df_benchmark = load_market("000001", "1")
-stock_codes = config.get_codes_from_local()
-for code in stock_codes:
-    run(df_benchmark, code, "1")
+def main():
+    df_benchmark = load_market("000001", "1")
+    stock_codes = config.get_codes_from_local()
+    for code in stock_codes:
+        run(df_benchmark, code, "1")
+
+
+if __name__ == "__main__":
+    main()
