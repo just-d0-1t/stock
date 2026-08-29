@@ -41,7 +41,7 @@ def pretreatment(stock, operate, tuning=None, debug=False):
     """
     在 records 中计算新增指标：10日/20日斜率、10日均量等。
     """
-    records = stock["records"].copy()
+    records = stock["records"]
 
     # 计算10日斜率（用于温和上行判断）
     def data_processing(i):

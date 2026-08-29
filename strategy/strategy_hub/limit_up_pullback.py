@@ -59,7 +59,7 @@ def pretreatment(stock, operate, tuning, debug):
       limit_up_pct:    涨停判定阈值（默认 0.098，即 9.8%）
       peak_window:     涨停段结束后 N 天内最高价仍视为回调起点（默认 3）
     """
-    records = stock["records"].copy()
+    records = stock["records"]
     tuning = parse_tuning(tuning)
 
     period = tuning.get("period", 100)

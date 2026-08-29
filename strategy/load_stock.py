@@ -33,7 +33,6 @@ def load_stock(code, path, end_date, typ=1):
     except Exception as e:
         return False, f"  加载股票数据出错，无法定位到指定日期: {e}"
 
-    records = records.copy()
     records.sort_values("trade_date", inplace=True)
     stock["records"] = records
 

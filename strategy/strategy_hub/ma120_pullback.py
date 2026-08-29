@@ -39,7 +39,7 @@ def pretreatment(stock, operate, tuning=None, debug=False):
         "hist_diff_ratio_limit": 0.30    # 条件4：历史最大距离
     }
     """
-    records = stock["records"].copy()
+    records = stock["records"]
 
     # ---- 参数 ----
     ma_diff_ratio_limit = 0.05

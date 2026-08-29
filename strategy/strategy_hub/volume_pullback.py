@@ -63,7 +63,7 @@ def calculate_normalized_slope(series):
 
 def pretreatment(stock, operate, tuning, debug):
     """股票数据预处理。"""
-    records = stock["records"].copy()
+    records = stock["records"]
     tuning = parse_tuning(tuning)
 
     ma_period = tuning.get("ma_period", 3)

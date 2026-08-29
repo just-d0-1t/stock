@@ -34,9 +34,7 @@ def is_continuous_rising(arr):
 
 
 def pretreatment(stock, operate, tuning, debug):
-    # ✅ 生成副本，避免 SettingWithCopyWarning
     records = stock["records"]
-    records = records.copy()
 
     # 解析策略参数
     period = 3  # 数据范围: 几天

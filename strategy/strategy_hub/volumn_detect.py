@@ -39,7 +39,7 @@ def parse_tuning(tuning_str: str):
 
 def pretreatment(stock, operate, tuning, debug):
     """股票数据预处理，用于策略分析前的数据准备。"""
-    records = stock["records"].copy()
+    records = stock["records"]
 
     # ✅ 默认参数（支持tuning覆盖）
     tuning = parse_tuning(tuning)
