@@ -27,6 +27,7 @@ import strategy.strategy_hub.volumn_break as volumn_break
 import strategy.strategy_hub.low_volumn_pullback as low_volumn_pullback
 import strategy.strategy_hub.ma120_pullback as ma120_pullback
 import strategy.strategy_hub.volume_pullback as volume_pullback
+import strategy.strategy_hub.limit_up_pullback as limit_up_pullback
 
 mapping = {
     "kdj": kdj,
@@ -37,6 +38,7 @@ mapping = {
     "low_volumn_pullback": low_volumn_pullback,
     "ma120_pullback": ma120_pullback,
     "volume_pullback": volume_pullback,
+    "limit_up_pullback": limit_up_pullback,
 }
 ### 注册完成
 
@@ -259,4 +261,3 @@ if __name__ == "__main__":
 
     predictor = Predictor(args.mode)
     predictor.predict(args.code, args.typ, args.operate, args.tuning, args.stock_cond, args.path, args.date, args.debug, args.use_cache)
-
