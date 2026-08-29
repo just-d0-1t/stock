@@ -18,7 +18,6 @@ from update.fetch_market import MarketAnalyzer
 
 def update(code, start_date, end_date=None, data_path=None, typ=1, fetch_from="local"):
     today = datetime.today().date()
-#    today = datetime.strptime("2025-09-05", "%Y-%m-%d").date()
 
     if data_path is None:
         data_path = config.default_data_path(code, typ)
@@ -31,25 +30,15 @@ def update(code, start_date, end_date=None, data_path=None, typ=1, fetch_from="l
         # 之前没有历史数据，需要从远程获取（ths 已显式指定则保留）
         if fetch_from == "local":
             fetch_from = "remote"
-        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, typ, fetch_from)
-        df = analyzer.run()
-
     else:
-        # 历史文件存在 → 检查是否需要更新
-        history = pd.read_csv(
-            data_path,
-            parse_dates=["trade_date"],
-        )
-        history.sort_values("trade_date", inplace=True)
-        last_date = history["trade_date"].iloc[-1].date()
-
-        days = 0
+        # 历史文件存在 → 从最后一天起增量拉取
+        history = pd.read_csv(data_path, parse_dates=["trade_date"])
+        last_date = history["trade_date"].max()
         if start_date is None:
-            start_date = (last_date - timedelta(days=days)).strftime("%Y-%m-%d")
-        analyzer = MarketAnalyzer(code, start_date, end_date, data_path, typ, fetch_from)
-        df = analyzer.run()
+            start_date = last_date.strftime("%Y-%m-%d")
 
-    return df
+    analyzer = MarketAnalyzer(code, start_date, end_date, data_path, typ, fetch_from)
+    return analyzer.run()
 
 
 # 支持命令行直接调用
