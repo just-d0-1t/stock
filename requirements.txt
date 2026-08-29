@@ -1,0 +1,9 @@
+# 项目依赖（开发环境 Python 3.13 实测版本）
+pandas==3.0.5
+numpy==2.5.2
+requests==2.33.1
+adata==2.9.5
+akshare==1.18.94
+
+# Web 前端（streamlit run web/app.py）；不用前端可留忽略
+streamlit>=1.30
