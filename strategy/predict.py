@@ -239,10 +239,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="股票策略回测")
 
     parser.add_argument("-c", "--code", required=True)
-    parser.add_argument("-k", "--typ", type=int, default=1)
+    parser.add_argument("-t", "--typ", type=int, default=1)
     parser.add_argument("-m", "--mode", required=True)
     parser.add_argument("-o", "--operate", required=True)
-    parser.add_argument("-t", "--tuning", default="")
+    parser.add_argument("--tuning", default="")
     parser.add_argument("-p", "--path")
     parser.add_argument("-q", "--date")
     parser.add_argument("-d", "--debug", action="store_true")

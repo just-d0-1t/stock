@@ -80,7 +80,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='并发更新所有股票数据')
     parser.add_argument('-f', '--fetch', required=True, help='指定股票代码，local|remote|file')
     parser.add_argument('-p', '--path', help='指定数据文件')
-    parser.add_argument('-k', '--typ', type=int, default=1, help='数据类型')
+    parser.add_argument('-t', '--typ', type=int, default=1, help='数据类型')
     parser.add_argument('-d', '--delay', type=float, default=0.75, help='请求间延迟（秒）')
     parser.add_argument('-w', '--workers', type=int, default=5, help='并发线程数')
     parser.add_argument('-s', '--source', default='remote', help='数据源：remote(adata/akshare) | local | ths(同花顺)')

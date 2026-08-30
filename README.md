@@ -158,17 +158,17 @@ python -m strategy.predict -c file,data/filtered.code -m limit_up_pullback -o bu
 | 参数 | 说明 |
 |---|---|
 | `-c/--code` | 股票代码；`all` 全市场；`file,<path>` 代码清单；逗号分隔多个代码 |
-| `-k/--typ` | 数据类型：1=股票，2=ETF 基金，3=指数/基金（各入口统一） |
+| `-t/--typ` | 数据类型：1=股票，2=ETF 基金，3=指数/基金（各入口统一，K 线粒度留给 `-k`） |
 | `-m/--mode` | 策略名（见下表） |
 | `-o/--operate` | `back_test` 回测｜`buy` 买入推荐 |
-| `-t/--tuning` | 策略参数，`k=v,k=v` 形式 |
+| `--tuning` | 策略参数，`k=v,k=v` 形式（无短选项） |
 | `-q/--date` | 截止日期 `YYYY-MM-DD`（只截取数据） |
 | `-p/--path` | 数据文件路径 |
 | `-d/--debug` | 调试输出 |
 
 ### 策略一览
 
-| 策略 | 逻辑 | 主要调参（-t） |
+| 策略 | 逻辑 | 主要调参（--tuning） |
 |---|---|---|
 | `fish_tub` | 鱼盆模型：MA20 趋势加速突破买入，跌破 MA20 卖出 | — |
 | `kdj` | KDJ 金叉买入 | — |
@@ -183,8 +183,8 @@ python -m strategy.predict -c file,data/filtered.code -m limit_up_pullback -o bu
 示例：
 
 ```bash
-python -m strategy.predict -c 603007 -m limit_up_pullback -o back_test -t "period=100,min_streak=2,pullback_pct=0.2,limit_up_pct=0.098"
-python -m strategy.predict -c all -m volumn_detect -o buy -t "volumn_amplify=2,volumn_period=20,price_period=60,rise=0.2"
+python -m strategy.predict -c 603007 -m limit_up_pullback -o back_test --tuning "period=100,min_streak=2,pullback_pct=0.2,limit_up_pct=0.098"
+python -m strategy.predict -c all -m volumn_detect -o buy --tuning "volumn_amplify=2,volumn_period=20,price_period=60,rise=0.2"
 ```
 
 ---

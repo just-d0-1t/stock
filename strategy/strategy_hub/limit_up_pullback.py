@@ -29,7 +29,7 @@ def pretreatment(stock, operate, tuning, debug):
     交易日，判断窗口内是否曾经存在“连续涨停 → 大幅回调（洗盘）”的完整事件，
     存在则当天发出买入信号。
 
-    参数（-t 传入）：
+    参数（--tuning 传入）：
       period:          回看窗口（默认 100）
       pullback_period: 回调周期（默认 20）
       min_history:     评估前至少需要的历史交易日数（默认 30）
