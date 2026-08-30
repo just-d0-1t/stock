@@ -75,3 +75,56 @@ def ma(all_df, period, new_start_idx=0):
             else:
                 first_under_flags.append("n")
         all_df["first_under_ma" + period] = first_under_flags
+
+
+def compute_kdj(all_df, new_start_idx, n=9, k_smooth=3, d_smooth=3):
+    """
+    增量计算 KDJ，确保结果与全量计算一致
+    :param all_df: 完整 DataFrame（已排序去重）
+    :param new_start_idx: 需要更新指标的起始索引（含重叠部分）
+    :param n: RSV 周期
+    """
+    if new_start_idx >= len(all_df):
+        return
+
+    # === 1. 确定计算窗口 ===
+    # 预热窗口长度：经验值 3*n（可调整）
+    warmup = max(n * 3, 50)  # 至少 50 行保证 EWM 收敛
+    calc_start = max(0, new_start_idx - warmup)
+
+    # 提取计算子集
+    calc_df = all_df.iloc[calc_start:].copy()
+
+    # === 2. 全量计算 KDJ（在子集上）===
+    low_min = calc_df['low'].rolling(window=n, min_periods=1).min()
+    high_max = calc_df['high'].rolling(window=n, min_periods=1).max()
+    rsv = (calc_df['close'] - low_min) / (high_max - low_min) * 100
+    calc_df['rsv'] = rsv.fillna(0)  # 处理除零或 NaN
+
+    # K 和 D 使用 EWM
+    calc_df['K'] = calc_df['rsv'].ewm(alpha=1/k_smooth, adjust=False).mean()
+    calc_df['D'] = calc_df['K'].ewm(alpha=1/d_smooth, adjust=False).mean()
+    calc_df['J'] = 3 * calc_df['K'] - 2 * calc_df['D']
+
+    # === 3. 只将“需要更新的部分”写回 all_df ===
+    # 从 new_start_idx 开始的所有行都需要更新（包括重叠部分）
+    update_indices = all_df.index[new_start_idx:]
+    update_slice = calc_df.loc[update_indices]
+
+    for col in ['K', 'D', 'J']:
+        all_df.loc[update_indices, col] = update_slice[col].values
+
+    # === 4. 更新信号（保留历史，只重算 new_start_idx 之后）===
+    if 'kdj_signal' not in all_df.columns:
+        all_df['kdj_signal'] = 'no_cross'
+    all_df.loc[new_start_idx:, 'kdj_signal'] = 'no_cross'  # 初始化
+
+    for i in range(new_start_idx, len(all_df)):
+        if i == 0:
+            continue
+        k_prev, d_prev = all_df.at[i-1, 'K'], all_df.at[i-1, 'D']
+        k_curr, d_curr = all_df.at[i, 'K'], all_df.at[i, 'D']
+        if k_prev < d_prev and k_curr > d_curr:
+            all_df.at[i, 'kdj_signal'] = 'golden_cross'
+        elif k_prev > d_prev and k_curr < d_curr:
+            all_df.at[i, 'kdj_signal'] = 'death_cross'
