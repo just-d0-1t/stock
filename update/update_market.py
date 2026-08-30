@@ -55,10 +55,10 @@ if __name__ == "__main__":
                         help='结束日期，格式: YYYY-MM-DD，默认为今天')
     parser.add_argument('-p', '--path',
                         help='数据文件保存位置，默认为./stock_type_data.csv')
-    parser.add_argument('-t', '--typ',
+    parser.add_argument('-k', '--typ',
                         type=int,
                         default=1,
-                        help='代码类型 1:股票 2:指数 3.基金')
+                        help='代码类型 1:股票 2:ETF基金 3:指数/基金')
     parser.add_argument('-f', '--fetch_from', default="local",
                         help='数据源，remote|ths|local（见 update/sources 注册表）')
 

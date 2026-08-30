@@ -158,6 +158,7 @@ python -m strategy.predict -c file,data/filtered.code -m limit_up_pullback -o bu
 | 参数 | 说明 |
 |---|---|
 | `-c/--code` | 股票代码；`all` 全市场；`file,<path>` 代码清单；逗号分隔多个代码 |
+| `-k/--typ` | 数据类型：1=股票，2=ETF 基金，3=指数/基金（各入口统一） |
 | `-m/--mode` | 策略名（见下表） |
 | `-o/--operate` | `back_test` 回测｜`buy` 买入推荐 |
 | `-t/--tuning` | 策略参数，`k=v,k=v` 形式 |

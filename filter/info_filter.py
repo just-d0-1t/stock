@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="按市值/成交额筛选股票代码（predict 前置）")
     parser.add_argument("--market", type=float, default=0, help="最低市值（元），如 1e10 表示 100 亿")
     parser.add_argument("--amount", type=float, default=0, help="最低成交额（元）")
-    parser.add_argument("-t", "--typ", default="1", help="数据类型 1:股票")
+    parser.add_argument("-k", "--typ", default="1", help="数据类型 1:股票")
     parser.add_argument("-o", "--out", default="data/filtered.code", help="输出代码清单文件")
     args = parser.parse_args()
 
