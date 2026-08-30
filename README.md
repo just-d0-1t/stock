@@ -56,6 +56,17 @@ pip install -r requirements.txt
 
 ---
 
+## 使用示例
+
+```bash
+# 拉取股票历史行情数据，000001：平安银行
+python -m update.update_market -c 000001 -f remote
+# 对 000001 平安银行，使用 “鱼盆模型” 进行回测
+python -m strategy.predict -c 000001 -m fish_tub -o back_test
+```
+
+---
+
 ## 数据说明
 
 - 行情：`data/{code}_{typ}_data.csv`，字段：
@@ -72,19 +83,23 @@ pip install -r requirements.txt
 ### 单只股票
 
 ```bash
+# 使用同花顺 API（需 THS_TOKEN）
+python -m update.update_market -c 603007 -s 2025-01-01 -f ths
+
 # 更新/初始化单只股票（-f 数据源：remote | ths | local）
 python -m update.update_market -c 603007 -s 2025-01-01 -f remote
 
 # 指定结束日期
 python -m update.update_market -c 603007 -s 2025-01-01 -e 2026-08-29 -f remote
-
-# 使用同花顺 API（需 THS_TOKEN）
-python -m update.update_market -c 603007 -s 2025-01-01 -f ths
 ```
 
 行为：本地无历史文件时默认拉取最近 5 年（`local` 源自动切换为 `remote`）；有历史文件时从最后交易日增量拉取，并自动重算 MA/KDJ。
 
-### 全市场并发更新
+推荐使用同花顺的数据源，相对稳定。同花顺的API可以搜索 “同花顺金融数据API” 注册申请。
+
+若拉取数据失败，可能是数据源限制。可以自行开发其他数据源，开发指导详见下面 “数据源（可插拔）” 板块说明。
+
+### 全市场数据并发更新
 
 ```bash
 # -f 代码来源：local（本地 info 列表）| remote（adata 全市场）| file（-p 指定清单）
@@ -93,6 +108,8 @@ python -m update.update_market_patch -f file -p data/zf5_top500.code -w 5 -d 0.7
 ```
 
 - `-w/--workers`：并发线程数；`-d/--delay`：请求间隔（秒）；`-s/--source`：数据源。
+
+注意不推荐并发更新，可能导致数据接口被限速、封禁。
 
 ### 个股信息（市值/股本）
 
