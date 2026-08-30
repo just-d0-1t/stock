@@ -22,11 +22,20 @@ class ThsSource(DailySource):
         self.token = token
 
     def fetch_daily(self, code, start_date=None, end_date=None):
-        """仅支持 A 股（typ=1）；自动补全市场后缀，如 603007 -> 603007.SH"""
-        if self.typ not in (1, "1"):
-            raise ValueError(f"同花顺行情 API 暂仅支持股票(typ=1)，当前 typ={self.typ}")
+        """
+        A 股（typ=1）走股票接口，ETF 基金（typ=2）走基金接口；
+        自动补全市场后缀，如 603007 -> 603007.SH、510300 -> 510300.SH。
+        """
+        if self.typ not in (1, "1", 2, "2"):
+            raise ValueError(f"同花顺行情 API 暂仅支持股票(typ=1)与 ETF 基金(typ=2)，当前 typ={self.typ}")
         end_date = end_date or datetime.today().strftime("%Y-%m-%d")
         client = ThsClient(token=self.token)
+        if self.typ in (2, "2"):
+            return client.fetch_fund_daily(
+                code=code,
+                start_date=start_date,
+                end_date=end_date,
+            )
         return client.fetch_daily(
             code=code,
             start_date=start_date,

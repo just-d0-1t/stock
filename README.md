@@ -74,7 +74,7 @@ python -m strategy.predict -c 000001 -m fish_tub -o back_test
   `ma5/ma10/ma20`、`above_ma*`、`first_above_ma*`、`first_under_ma*`、`K/D/J`、`kdj_signal`。
 - 个股信息：`data/{code}_{typ}_info.csv`，字段：
   `stock_code, short_name, exchange, list_date, change_date, total_shares, limit_shares, list_a_shares, change_reason`。
-- `typ`：1=股票，2=指数，3=基金。
+- `typ`：1=股票，2=ETF 基金（`remote`/《`ths`》支持），3=指数/基金。
 
 ---
 
@@ -132,7 +132,7 @@ python -m update.check
 | 名称 | 实现 | 说明 |
 |---|---|---|
 | `remote` / `adata` | `adata_source.py` | adata/akshare（默认远程源） |
-| `ths` | `ths_source.py` | 同花顺 API，需 `THS_TOKEN` |
+| `ths` | `ths_source.py` | 同花顺 API，需 `THS_TOKEN`；支持股票(typ=1)与 ETF 基金(typ=2) |
 | `local` | `local_source.py` | 本地全市场快照 |
 
 ---

@@ -10,6 +10,8 @@
 对接接口：
   GET https://fuyao.aicubes.cn/api/a-share/prices/historical
       ?thscode=603007.SH&interval=1d&start=<epoch_ms>&end=<epoch_ms>&adjust=forward
+  GET https://fuyao.aicubes.cn/api/fund/market/historical   (基金/ETF，仅四参数)
+      ?thscode=510300.SH&interval=1d&start=<epoch_ms>&end=<epoch_ms>
 
 调用方式：
   1. 设置环境变量 THS_TOKEN（作为 X-api-key 请求头）；
@@ -31,9 +33,13 @@ from datetime import datetime, timedelta, timezone
 # 股票代码前缀 -> 市场后缀
 exchange_suffix = {
     "00": ".SZ",
+    "15": ".SZ",  # 深市 ETF（159xxx）
     "20": ".SZ",
     "30": ".SZ",
     "43": ".BJ",
+    "51": ".SH",  # 沪市 ETF（51xxxx）
+    "56": ".SH",  # 沪市 ETF（56xxxx）
+    "58": ".SH",  # 沪市 ETF（58xxxx，含科创板 588）
     "60": ".SH",
     "68": ".SH",
     "83": ".BJ",
@@ -80,9 +86,10 @@ def ms_to_date(ms):
 
 
 class ThsClient:
-    """同花顺行情数据客户端"""
+    """同花顺行情数据客户端（A股 + ETF 基金）"""
 
     BASE_URL = "https://fuyao.aicubes.cn/api/a-share/prices/historical"
+    FUND_BASE_URL = "https://fuyao.aicubes.cn/api/fund/market/historical"
 
     def __init__(self, token=None, timeout=10):
         self.token = token or os.environ.get("THS_TOKEN", "")
@@ -90,16 +97,17 @@ class ThsClient:
             raise ValueError("缺少 THS_TOKEN 环境变量（同花顺 API 的 X-api-key）")
         self.timeout = timeout
 
-    def fetch_daily(self, code, start_date=None, end_date=None,
-                    start_ms=None, end_ms=None, interval="1d", adjust="forward"):
+    def _request_historical(self, url, code, start_date, end_date,
+                            start_ms, end_ms, interval, extra_params=None):
         """
-        获取单只股票日线行情（默认前复权）。
+        通用历史行情请求：统一处理参数编码、X-api-key 头部与响应解析。
 
-        :param code: 股票代码，可带或不带市场后缀，如 "603007" / "603007.SH"
+        :param url: 接口地址（A 股或基金）
+        :param code: 代码，可带或不带市场后缀，如 "603007" / "510300"
         :param start_date / end_date: "YYYY-MM-DD"，优先于 start_ms / end_ms
         :param start_ms / end_ms: 毫秒时间戳
         :param interval: K 线周期，固定 "1d"
-        :param adjust: 复权方式，固定 "forward"（前复权）
+        :param extra_params: 额外查询参数（如 A 股的 adjust），None 则不加
         """
         thscode = compile_exchange_by_stock_code(code)
         if start_date is not None:
@@ -116,12 +124,47 @@ class ThsClient:
             "interval": interval,
             "start": start_ms,
             "end": end_ms,
-            "adjust": adjust,
         }
+        if extra_params:
+            params.update(extra_params)
         headers = {"X-api-key": self.token}
-        resp = requests.get(self.BASE_URL, params=params, headers=headers, timeout=self.timeout)
+        resp = requests.get(url, params=params, headers=headers, timeout=self.timeout)
         resp.raise_for_status()
         return self._parse_payload(resp.json())
+
+    def fetch_daily(self, code, start_date=None, end_date=None,
+                    start_ms=None, end_ms=None, interval="1d", adjust="forward"):
+        """
+        获取单只股票日线行情（默认前复权）。
+
+        :param code: 股票代码，可带或不带市场后缀，如 "603007" / "603007.SH"
+        :param start_date / end_date: "YYYY-MM-DD"，优先于 start_ms / end_ms
+        :param start_ms / end_ms: 毫秒时间戳
+        :param interval: K 线周期，固定 "1d"
+        :param adjust: 复权方式，固定 "forward"（前复权）
+        """
+        return self._request_historical(
+            self.BASE_URL, code, start_date, end_date, start_ms, end_ms,
+            interval, extra_params={"adjust": adjust},
+        )
+
+    def fetch_fund_daily(self, code, start_date=None, end_date=None,
+                         start_ms=None, end_ms=None, interval="1d"):
+        """
+        获取 ETF 基金日线行情。
+
+        基金接口仅 thscode/interval/start/end 四个参数，无 adjust 字段；
+        响应结构假定与 A 股接口一致（code/data/item + date_ms/open_price 等）。
+
+        :param code: 基金代码，可带或不带市场后缀，如 "510300" / "510300.SH"
+        :param start_date / end_date: "YYYY-MM-DD"，优先于 start_ms / end_ms
+        :param start_ms / end_ms: 毫秒时间戳
+        :param interval: K 线周期，固定 "1d"
+        """
+        return self._request_historical(
+            self.FUND_BASE_URL, code, start_date, end_date, start_ms, end_ms,
+            interval,
+        )
 
     def _parse_payload(self, payload):
         """接口响应 -> 存储结构 DataFrame"""
